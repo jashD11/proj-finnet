@@ -1,32 +1,50 @@
 # Financial Networks Project
 
-Replication of Cardoso & Palomar (2020), *"Learning Undirected Graphs in Financial Markets"* (arXiv:2005.09958v4).
+Faithful, from-scratch replications of two papers on learning graph/network structure from
+multivariate financial and time-series data. Each paper lives in its own self-contained folder
+with its own solver, experiments, tests, and a single results notebook.
 
-Learns graph Laplacian (precision) matrices from stock returns under a Gaussian Markov Random Field model via a custom ADMM solver, then uses the learned graphs for clustering and a trading strategy.
+| Folder | Paper | Method | Notebook |
+|--------|-------|--------|----------|
+| [`paper1_gmrf_laplacian/`](paper1_gmrf_laplacian/) | Cardoso & Palomar (2020), *Learning Undirected Graphs in Financial Markets* (`docs/2005.09958v4.pdf`) | GMRF graph-Laplacian (precision) estimation for clustering + a trading signal | `replication_notebook.ipynb` |
+| [`paper2_ticc/`](paper2_ticc/) | Hallac, Vare, Boyd & Leskovec (KDD 2017), *Toeplitz Inverse Covariance-Based Clustering of Multivariate Time Series Data* (`docs/1706.03161v2.pdf`) | Subsequence clustering via block-Toeplitz inverse-covariance MRFs + dynamic-programming segmentation | `replication_notebook.ipynb` |
 
-## Experiments
-
-| Fig | Experiment | Data | Script |
-|-----|-----------|------|--------|
-| 1 | Preprocessing effects | 130 S&P 500 stocks (3 sectors) | `exp1_preprocessing.py` |
-| 2 | Degree-controlled k-component graphs vs SGL | same 130 stocks | `exp2_kcomponent.py` |
-| 3 | Time-varying graphs (rolling window) | FAAMUNG (7 stocks) | `exp3_timevarying.py` |
-| 4 | Trading strategy (algebraic connectivity signal) | FAAMUNG (7 stocks) | `exp4_trading.py` |
+Both paper PDFs are in [`docs/`](docs/).
 
 ## Setup
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python data/fetch_data.py   # one-time data pull, cached to data/*.csv
-python -m pytest tests/     # sanity-check the ADMM solver
 ```
 
-Each `exp*.py` script is standalone: it loads the cached CSVs, runs the solver/algorithm, and writes a figure to `figures/`.
+## Paper 1 — GMRF graph Laplacians
 
-## Structure
+Learns graph Laplacian (precision) matrices from stock returns under a Gaussian Markov Random
+Field model, then uses the learned graphs for sector clustering and an algebraic-connectivity
+trading signal. Four experiments (`exp1..4.py`) reproduce the paper's Figures 1–4. See
+[`paper1_gmrf_laplacian/README`-equivalent docs](paper1_gmrf_laplacian/CLAUDE.md) for details.
 
-- `solver/` — ADMM Laplacian solver (`admm_graph.py`), k-component wrapper (`algorithm1.py`), time-varying wrapper (`algorithm2.py`), SGL baseline (`sgl_benchmark.py`)
-- `utils/` — preprocessing, graph metrics, visualization
-- `data/` — ticker lists and cached log-return CSVs
-- `tests/` — solver sanity checks
-- `figures/` — output plots
+```bash
+cd paper1_gmrf_laplacian
+python -m pytest tests/          # sanity-check the solver
+python exp1_preprocessing.py     # → figures/fig1_preprocessing.png   (etc. for exp2..4)
+jupyter notebook replication_notebook.ipynb
+```
+
+## Paper 2 — TICC (Toeplitz Inverse Covariance-Based Clustering)
+
+Simultaneously segments and clusters multivariate time series: each cluster is a block-Toeplitz
+Gaussian MRF (inverse covariance), fit via ADMM, and points are assigned by a dynamic-programming
+(Viterbi) pass with a temporal-consistency penalty. Reproduces the paper's quantitative results on
+synthetic data (Table 1 clustering accuracy, Table 2 network recovery, Fig 3 sample sweep, Fig 4
+scalability). The paper's automobile-sensor case study uses proprietary data and is documented as
+non-reproducible. See [`paper2_ticc/CLAUDE.md`](paper2_ticc/CLAUDE.md).
+
+```bash
+cd paper2_ticc
+python -m pytest tests/
+python experiments/exp1_table1_f1.py       # Table 1
+python experiments/exp3_fig3_samples.py    # → figures/fig3_samples.png   (etc.)
+jupyter notebook replication_notebook.ipynb
+```
