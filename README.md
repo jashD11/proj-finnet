@@ -27,7 +27,7 @@ trading signal. Four experiments (`exp1..4.py`) reproduce the paper's Figures 1â
 
 ```bash
 cd paper1_gmrf_laplacian
-python -m pytest tests/          # sanity-check the solver
+python tests/test_solver.py      # sanity-check the solver (script-style checks)
 python exp1_preprocessing.py     # â†’ figures/fig1_preprocessing.png   (etc. for exp2..4)
 jupyter notebook replication_notebook.ipynb
 ```
