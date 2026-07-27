@@ -4,5 +4,6 @@ __pycache__/
 .DS_Store
 .ipynb_checkpoints/
 
-*.md
-!README.md
+# Ignore verbose working logs, but track source-of-truth docs (README, CLAUDE.md)
+dev_log.md
+PIPELINE.md
