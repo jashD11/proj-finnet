@@ -1,8 +1,12 @@
 # Financial Networks Project
 
-Faithful, from-scratch replications of two papers on learning graph/network structure from
-multivariate financial and time-series data. Each paper lives in its own self-contained folder
-with its own solver, experiments, tests, and a single results notebook.
+From-scratch replications of two papers on learning graph/network structure from multivariate
+financial and time-series data. Each paper lives in its own self-contained folder with its own
+solver, experiments, tests, and a single results notebook.
+
+Replication status is tracked per paper below and in each folder's `CLAUDE.md`. Results are
+labelled *reproduced*, *partial* or *not reproduced* against the source paper; deviations in
+protocol or data generation are recorded rather than absorbed into the headline numbers.
 
 | Folder | Paper | Method | Notebook |
 |--------|-------|--------|----------|
@@ -36,10 +40,25 @@ jupyter notebook replication_notebook.ipynb
 
 Simultaneously segments and clusters multivariate time series: each cluster is a block-Toeplitz
 Gaussian MRF (inverse covariance), fit via ADMM, and points are assigned by a dynamic-programming
-(Viterbi) pass with a temporal-consistency penalty. Reproduces the paper's quantitative results on
-synthetic data (Table 1 clustering accuracy, Table 2 network recovery, Fig 3 sample sweep, Fig 4
-scalability). The paper's automobile-sensor case study uses proprietary data and is documented as
-non-reproducible. See [`paper2_ticc/CLAUDE.md`](paper2_ticc/CLAUDE.md).
+(Viterbi) pass with a temporal-consistency penalty.
+
+**Replication status — partial.** The paper's headline results reproduce: TICC substantially
+outperforms every baseline on zero-mean structural clusters (Table 1), and reaches high accuracy
+from far fewer samples (Fig 3). The solver is verified independently — DP matches brute force,
+ADMM returns valid block-Toeplitz Θ, and there is no ground-truth leakage into the fit.
+
+Not yet reproduced, and **not** to be cited as replicated:
+
+- the `TICC, β=0` ablation is systematically too weak (avg 0.75 vs the paper's 0.88), which
+  *overstates* the value of the temporal-consistency penalty;
+- network recovery (Table 2) sits below the paper's 0.79–0.90 band;
+- Fig 4 is a timing proxy over a narrower range, not an actual TICC run;
+- window-size robustness, the micro-F1 cross-check and BIC selection of K are not implemented;
+- the automobile-sensor case study uses proprietary data and is genuinely unavailable.
+
+Committed tables are a single data seed with no error bars, and use 400 samples per segment rather
+than the paper's `100·K`. Full accounting, including a 5-seed audit, in
+[`paper2_ticc/CLAUDE.md`](paper2_ticc/CLAUDE.md) §5–6.
 
 ```bash
 cd paper2_ticc
