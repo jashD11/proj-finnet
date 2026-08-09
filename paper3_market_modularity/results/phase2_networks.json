@@ -1,0 +1,61 @@
+{
+  "n_nodes": 360,
+  "n_windows": 6315,
+  "n_edges_per_day": 6462,
+  "delta_t": 30,
+  "f": 0.1,
+  "timestamp_convention": "t2",
+  "mean_degree": 35.9,
+  "mean_degree_target": 35.9,
+  "tau_mean": 0.44441302687492773,
+  "tau_min": 0.2632486401242679,
+  "tau_max": 0.8614487086030667,
+  "tau_argmax_date": "1987-10-19",
+  "isolated_mean": 14.773238321456848,
+  "isolated_max": 152,
+  "isolated_argmax_date": "1987-10-19",
+  "n_flat_total": 0,
+  "edge_w_min_overall": 0.2632486401242679,
+  "edge_w_max_overall": 0.9956290539756104,
+  "n_below_neg_tau_total": 4246798,
+  "n_below_neg_tau_max": 4596,
+  "noise_reference": {
+    "n_windows": 501,
+    "tau_mean": 0.24064238179366368,
+    "tau_std": 0.0011408563576687223,
+    "isolated_mean": 0.0,
+    "edge_w_mean": 0.32405273734256046,
+    "seed": 7
+  },
+  "crisis_windows": {
+    "black_monday": {
+      "tau_max": 0.8614487086030667,
+      "tau_pctile": 0.9998416468725257,
+      "isolated_max": 152,
+      "isolated_pctile": 0.9998416468725257
+    },
+    "autumn_2008": {
+      "tau_max": 0.7980442463228847,
+      "tau_pctile": 0.9897070467141726,
+      "isolated_max": 59,
+      "isolated_pctile": 0.9483768804433887
+    },
+    "tau_q95": 0.6851172970993061,
+    "isolated_q95": 59.0
+  },
+  "convention_fit": {
+    "global_isolate_peak_date": "1987-10-19",
+    "t1": {
+      "isolate_peak_date": "1987-09-04",
+      "days_from_black_monday": -45
+    },
+    "midpoint": {
+      "isolate_peak_date": "1987-09-28",
+      "days_from_black_monday": -21
+    },
+    "t2": {
+      "isolate_peak_date": "1987-10-19",
+      "days_from_black_monday": 0
+    }
+  }
+}

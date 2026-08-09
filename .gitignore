@@ -12,3 +12,8 @@ PIPELINE.md
 # (data/fetch_data.py). panel_prices.parquet IS tracked — it is the analysis
 # input, and pinning it keeps results reproducible when Yahoo revises history.
 paper3_market_modularity/data/raw_closes.parquet
+# paper 3: derived analysis artifacts, all rebuilt by experiments/exp1_data.py
+# and exp2_networks.py. edges.npy alone is ~163 MB.
+paper3_market_modularity/data/panel_clean.parquet
+paper3_market_modularity/data/returns.npy
+paper3_market_modularity/data/edges.npy

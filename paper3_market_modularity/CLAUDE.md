@@ -125,7 +125,7 @@ run and reported at every boundary before the next begins.
 |---|---|---|
 | Adjusted vs. raw closes | **adjusted** (`auto_adjust=True`) | raw closes turn every split into a fake −69% return poisoning 30 networks (A2) |
 | Missing days | **`drop_days`** default, `ffill` implemented | ffill manufactures zero returns on halt days, deflating that stock's correlations (A3) |
-| Window timestamp | **midpoint, provisional** | Fig. 8's five date anchors give a constant +355-day offset; midpoint misses by 3 days, t₁ by 18, t₂ by 12. Overrides the a-priori t₂ in `PLAN.md`. Phase 2's Black Monday check is the tiebreaker (A10) |
+| Window timestamp | **t₂ (window close)** | Settled empirically. Fig. 8's anchors + `C_p` = 6,008 + a February 2011 end are jointly satisfiable *only* under t₂; and under t₂ our isolate peak lands on Black Monday to the day, where t₁/midpoint would stamp the shattered network 45/21 days *before* the crash (A10) |
 | Non-positive adjusted prices | **drop the ticker** | yfinance back-adjusts dividends by subtraction and can return negative closes (`VHI`); `log()` is undefined (A2) |
 | Δt = 30 meaning | **30 returns from 31 prices** | forced by the paper's own `N_w = C_p − Δt` |
 | Crisis date ranges | **pre-registered in Phase 0** | the paper dates only Black Monday; choosing windows after seeing results would let any detector be tuned (C2/E10) |
@@ -144,8 +144,10 @@ full Phase 2–6 rerun.
 
 - [x] Phase 0 — universe, panel, `UNIVERSE.md`, pre-registered crisis windows
       *N = 377 × T = 6,345 (1986-01-02 → 2011-02-28), 6/6 acceptance tests pass.*
-- [ ] Phase 1 — returns, split detector, `rho_bar` reference series
-- [ ] Phase 2 — networks, τ(t), timestamp calibration
+- [x] Phase 1 — returns, quality gates, `rho_bar` reference series
+      *N 377 → 360 after the frozen-price / bad-print / split gates; 6/6 pass.*
+- [x] Phase 2 — networks, τ(t), A10 resolved, A4 noise reference
+      *6,315 networks × 6,462 edges, mean degree exactly 35.9 = f(N−1); 8/8 pass.*
 - [ ] Phase 3 — communities, `k[t]`, `Π[t]`, three modularities
 - [ ] Phase 4 — null models, noise floor
 - [ ] Phase 5 — the eight measures
@@ -164,4 +166,6 @@ Filled in as phases complete. See `PITFALLS.md` for the audit items each one map
 | D2 | Panel length | `C_p` = 6,008 | **T = 6,345** | The paper's own count is inconsistent with its stated Jan-1986–Feb-2011 range on any modern calendar; Fig. 8's anchors localise the 337-day shortfall to before May 1991 (A10). |
 | D3 | Windows | `N_w` = 5,978 | **6,314** | Follows directly from D2. |
 | D4 | `VHI` excluded | not applicable | dropped | `yfinance` returns negative dividend-adjusted closes for it; a 2015-era Yahoo pull would not have had this defect (A2). |
-| D5 | Timestamp convention | unstated | **midpoint (provisional)** | Empirically calibrated against Fig. 8; overrides the a-priori t₂. Revisit in Phase 2. |
+| D5 | Timestamp convention | unstated | **t₂ (window close)** | Only convention consistent with Fig. 8's anchors, `C_p` = 6,008 and a Feb-2011 end; independently confirmed by Black Monday alignment (A10). |
+| D6 | Return quality gates | none | **17 further tickers dropped** | Frozen-price runs up to 743 days would have produced guaranteed isolated nodes, faking the Fig. 3B crisis signature; plus one bad print and unadjusted corporate actions. See `data/QUALITY.md` (A2/A3). |
+| D7 | Analysis universe | N = 348 | **N = 360** | Phase 0's 377 completeness survivors minus the 17 removed by D6. |

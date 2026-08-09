@@ -19,7 +19,12 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from data.fetch_data import build_panel  # noqa: E402
+from data.quality import longest_zero_run, quality_gate  # noqa: E402
 from data.universe import to_yahoo_symbol  # noqa: E402
+from net.construct import (build_network_sequence, decode_pairs,  # noqa: E402
+                           log_returns, mean_correlation_series, n_windows,
+                           target_edge_count, threshold_window,
+                           window_correlation, window_timestamps)
 from utils.crisis_dates import CRISES, coverage, crisis_frame, crisis_mask  # noqa: E402
 
 
@@ -114,6 +119,142 @@ def test_black_monday_is_inside_its_own_band():
     mask = crisis_mask(idx, tiers=("sharp",))
     assert mask.loc[pd.Timestamp("1987-10-19")]
     assert not mask.loc[pd.Timestamp("1987-06-01")]
+
+
+# ── Phase 1: returns and quality gates ─────────────────────────────────────
+
+def test_log_returns_rejects_non_positive_prices():
+    """VHI came back from yfinance with a negative adjusted close."""
+    with pytest.raises(ValueError):
+        log_returns(np.array([[1.0, 2.0, -3.0]]))
+
+
+def test_longest_zero_run():
+    assert longest_zero_run(np.array([0.0, 0.0, 0.1, 0.0, 0.0, 0.0])) == 3
+    assert longest_zero_run(np.array([0.1, 0.2])) == 0
+
+
+def _gate_fixture(seed=0):
+    """Four series: one clean, one frozen, one bad print, one split artifact."""
+    rng = np.random.default_rng(seed)
+    Y = rng.normal(0, 0.02, size=(4, 400))
+    Y[1, 100:160] = 0.0           # frozen for 60 days  -> G1
+    Y[2, 200] = 0.8               # spike ...
+    Y[2, 201] = -0.8              # ... the next day undoes -> G2
+    Y[3, 300] = -1.4              # unadjusted split      -> G3
+    return Y, ["CLEAN", "FROZEN", "BADPRINT", "SPLIT"]
+
+
+def test_quality_gate_catches_each_failure_mode_separately():
+    Y, tickers = _gate_fixture()
+    keep, rep = quality_gate(Y, tickers, delta_t=30, verbose=False)
+    assert rep["g1_frozen_run"] == ["FROZEN"]
+    assert rep["g2_reversing_spike"] == ["BADPRINT"]
+    assert rep["g3_extreme_return"] == ["SPLIT"]
+    assert list(np.array(tickers)[keep]) == ["CLEAN"]
+    assert rep["max_frozen_run_after"] < 30
+
+
+def test_quality_gate_keeps_a_real_crash():
+    """AIG fell 60.8 % the day Lehman filed. A gate that removes that is
+    removing the crisis from a paper about crises."""
+    rng = np.random.default_rng(1)
+    Y = rng.normal(0, 0.02, size=(1, 400))
+    Y[0, 200] = -0.936
+    keep, rep = quality_gate(Y, ["AIG"], delta_t=30, verbose=False)
+    assert keep.all() and rep["n_after"] == 1
+
+
+def test_frozen_run_gate_is_tied_to_delta_t():
+    """A 40-day frozen run is fatal at Δt=30 but tolerable at Δt=60... and the
+    point of the gate is that it tracks the window length, not a round number."""
+    Y, tickers = _gate_fixture()
+    assert "FROZEN" in quality_gate(Y, tickers, delta_t=30, verbose=False)[1]["g1_frozen_run"]
+    assert "FROZEN" not in quality_gate(Y, tickers, delta_t=90, verbose=False)[1]["g1_frozen_run"]
+
+
+# ── Phase 2: network construction ──────────────────────────────────────────
+
+def _returns(n=40, t=200, seed=3):
+    return np.random.default_rng(seed).normal(0, 0.02, size=(n, t))
+
+
+def test_window_correlation_matches_numpy():
+    Y = _returns()
+    C = window_correlation(Y, 10, 30)
+    ref = np.corrcoef(Y[:, 10:40])
+    assert np.allclose(C, ref, atol=1e-12)
+    assert np.allclose(np.diag(C), 1.0)
+
+
+def test_zero_variance_row_becomes_a_guaranteed_non_edge():
+    """A stock frozen through the window gets correlation 0, not NaN."""
+    Y = _returns()
+    Y[7, 10:40] = 0.0
+    C = window_correlation(Y, 10, 30)
+    assert not np.isnan(C).any()
+    assert np.allclose(C[7, :], 0.0)
+
+
+def test_n_windows_matches_the_papers_own_relation():
+    """N_w = C_p - Delta_t; the paper's 6008 - 30 = 5978 pins the convention."""
+    assert n_windows(6008, 30) == 5978
+
+
+def test_threshold_keeps_exactly_the_target_count_and_tau_is_the_cutoff():
+    Y = _returns()
+    N = Y.shape[0]
+    C = window_correlation(Y, 0, 30)
+    k = target_edge_count(N, 0.10)
+    iu = np.triu_indices(N, 1)
+    tau, pairs, weights = threshold_window(C, k, iu)
+    assert len(pairs) == k == len(np.unique(pairs))
+    assert np.isclose(tau, weights.min())
+    # Exactly k upper-triangle entries are >= tau, and none kept is below it.
+    assert (C[iu] >= tau).sum() == k
+    assert (weights >= tau).all()
+
+
+def test_decode_pairs_round_trips_and_is_upper_triangular():
+    Y = _returns()
+    N = Y.shape[0]
+    C = window_correlation(Y, 0, 30)
+    iu = np.triu_indices(N, 1)
+    _, pairs, _ = threshold_window(C, target_edge_count(N, 0.10), iu)
+    ij = decode_pairs(pairs, N)
+    assert (ij[:, 0] < ij[:, 1]).all()
+    assert np.array_equal(ij[:, 0] * N + ij[:, 1], pairs.astype(np.int64))
+
+
+def test_every_day_has_the_same_edge_count():
+    """The paper's fixed-density claim: average degree is constant by
+    construction, so a varying edge count means the thresholding is wrong."""
+    Y = _returns(t=90)
+    seq = build_network_sequence(Y, 30, 0.10, verbose=False)
+    assert seq["edges"].shape == (seq["n_windows"], seq["n_edges"])
+    for w in range(seq["n_windows"]):
+        assert len(np.unique(seq["edges"][w])) == seq["n_edges"]
+
+
+def test_mean_correlation_series_matches_the_brute_force_value():
+    """The O(N·Δt) shortcut must equal the O(N²·Δt) computation exactly."""
+    Y = _returns(t=70)
+    fast = mean_correlation_series(Y, 30)
+    N = Y.shape[0]
+    iu = np.triu_indices(N, 1)
+    slow = np.array([window_correlation(Y, w, 30)[iu].mean()
+                     for w in range(len(fast))])
+    assert np.allclose(fast, slow, atol=1e-12)
+
+
+def test_window_timestamps_offsets_and_validation():
+    dates = pd.bdate_range("2000-01-03", periods=100)
+    assert window_timestamps(dates, 30, "t1")[0] == dates[0]
+    assert window_timestamps(dates, 30, "midpoint")[0] == dates[15]
+    assert window_timestamps(dates, 30, "t2")[0] == dates[30]
+    assert len(window_timestamps(dates, 30, "t2")) == n_windows(len(dates), 30)
+    with pytest.raises(ValueError):
+        window_timestamps(dates, 30, "close")
 
 
 if __name__ == "__main__":

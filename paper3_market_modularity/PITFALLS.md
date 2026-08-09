@@ -17,13 +17,13 @@
 | A1 | Survivorship bias (348 of 3,799) | THINK | 0 | **addressed** |
 | A2 | Adjusted vs. raw closes unstated | EASY | 0–1 | **addressed** (Phase 1 confirms) |
 | A3 | Missing-data / trading-halt policy unstated | EASY | 0–1 | **addressed** |
-| A4 | N/T ≈ 11.6 — degenerate correlation matrix | THINK | 2 | pending |
+| A4 | N/T ≈ 11.6 — degenerate correlation matrix | THINK | 2 | **addressed** |
 | A5 | Market mode never removed | THINK | — | **UNTESTED** |
 | A6 | Δt = 30 never justified or robustness-tested | EASY | — | **UNTESTED** |
-| A7 | Fixed density deletes the primary crisis signal | THINK | 2, 8a | pending |
-| A8 | Negative correlations structurally invisible | THINK | 2 | pending |
-| A9 | Binarization discards edge weights | THINK | 2 | pending |
-| A10 | Window timestamp convention unstated | EASY* | 2 | **largely solved in Phase 0 — see below** |
+| A7 | Fixed density deletes the primary crisis signal | THINK | 2, 8a | **addressed** (8a pending) |
+| A8 | Negative correlations structurally invisible | THINK | 2 | **addressed** |
+| A9 | Binarization discards edge weights | THINK | 2 | **addressed** |
+| A10 | Window timestamp convention unstated | EASY* | 2 | **RESOLVED — t₂** |
 | B1 | Louvain degeneracy, no seed, no stability check | EASY | 3, 8f | pending |
 | B2 | Independent daily runs mix jitter with real change | THINK | 8f | pending |
 | B3 | Resolution limit | THINK | 3 | pending |
@@ -89,7 +89,11 @@ Halts are frequent precisely during crises. Forward-filling produces zero return
 ### A4. N/T ≈ 11.6 — the correlation matrix is degenerate. [THINK]
 30 observations, 348 stocks. Per-entry noise standard deviation ≈ 0.19. Pure independent noise thresholded at top-10% yields ρ ≈ 0.24 and a network that looks exactly as full as the real one. The paper applies no random-matrix cleaning and never raises the issue. Fixing it (eigenvalue clipping, shrinkage) changes the object being studied.
 
-*Our handling:* not corrected — correcting it would replicate a different paper. Quantified instead: Phase 2 runs the same pipeline on i.i.d. Gaussian returns of identical shape and reports the resulting τ and network statistics as a noise reference.
+*Our handling:* not corrected — correcting it would replicate a different paper. Quantified instead: Phase 2 runs the same pipeline on i.i.d. Gaussian returns of identical shape.
+
+**Phase 2 result — the audit's prediction is confirmed almost exactly.** Pure i.i.d. Gaussian noise, 360 series × 30 observations, put through the identical construction, gives **τ = 0.241 ± 0.001** and a network that is just as full and just as connected as the real one (0 isolated nodes, mean retained edge weight 0.324). The audit predicted ρ ≈ 0.24 from the 1/√29 ≈ 0.19 per-entry noise alone.
+
+Our real τ ranges 0.263–0.861 with a mean of **0.444**. So on a *typical* day the threshold sits only ~0.20 above the level pure noise would produce unaided, and the quietest days in the sample (τ ≈ 0.26) are barely distinguishable from noise at all. The crisis days are unambiguous — τ = 0.861 on Black Monday is far outside anything noise generates — but the paper's normal-times networks contain a great deal of estimation error, and it is never acknowledged.
 
 ### A5. The market mode is never removed. [THINK]
 Under ρ_ij ≈ β_i β_j σ²_M / (σ_i σ_j), the top 10% of correlations largely selects high-β_i β_j pairs. So the network is substantially a map of market beta, not of economic relatedness. Sector structure is only the second-order effect. Standard practice in this literature is to regress out the market factor first. Cheap to test as a variant, but it produces a genuinely different network.
@@ -106,15 +110,23 @@ They tested robustness to *f* (Fig. S1) but not to the more dangerous parameter.
 
 *Our handling:* τ(t) stored for every day in Phase 2 and made a first-class result in Phase 8a, where it competes against modularity as a crisis indicator.
 
+**Phase 2 result — the discarded signal is very strong.** τ(t) peaks at **0.861 on 1987-10-19, Black Monday, which is its global maximum over 25 years**, against a mean of 0.444. Autumn 2008 reaches 0.798 (99th percentile). Mean pairwise correlation behaves the same way, peaking at 0.683. Both are recovered at zero cost and are available before any community is detected. Phase 8a will test whether modularity — which requires Louvain, a null model and eight measures — actually beats them.
+
 ### A8. Negative correlations are structurally invisible. [THINK]
 τ always lands around 0.4–0.6, so no anticorrelated pair ever becomes an edge. Two stocks that reliably move oppositely — a strong, tradeable relationship — are recorded identically to two unrelated stocks.
 
 *Our handling:* not corrected. Quantified: Phase 2 reports the count and time series of pairs with ρ < −τ, i.e. the relationships the construction is blind to.
 
+**Phase 2 result, and it turned up something the audit did not anticipate.** Across the sample there are **4,246,798 pair-days** with ρ < −τ — strong anticorrelations recorded identically to no relationship at all — peaking at 4,596 pairs in a single day (~7 % of all pairs, comparable to the 6,462 edges actually kept).
+
+More interesting is the *shape* of the series: invisible pairs are common and volatile from 1987 through about 2002, then **collapse to near zero from roughly 2003 onward and never recover** (see `figures/fig2_networks.png`, panel C). Whatever changed in the cross-sectional structure of NYSE returns, it changed close to the paper's own unexplained 2002 break point. This is a candidate mechanism for **E11**, which the paper leaves as "the topic of future work" — noted here rather than pursued, since E11 is out of scope.
+
 ### A9. Binarization discards edge weights. [THINK]
 ρ = 0.99 and ρ = 0.51 become the same edge. Justified by convenience (cliques, Louvain, rich-club are simpler on binary graphs), but it is real information loss.
 
 *Our handling:* not corrected; the mean and spread of retained edge weights are reported per day so the magnitude of the discard is visible.
+
+**Phase 2 result.** Retained edge weights span **0.263 to 0.996** across the sample. Within a single day the spread is routinely as wide as 0.3 to 0.99. A pair correlated at 0.99 and a pair correlated at 0.27 are stored as the same 1, so the binarization is discarding roughly the entire dynamic range of the quantity the network is built from.
 
 ### A10. Window timestamp convention unstated. [EASY, but critical]
 Is a network plotted at t₁, t₂, or the midpoint? The ambiguity is 30 days — the same size as the effects being claimed. Pick one, state it, and check your Black Monday alignment against Fig. 3.
@@ -131,17 +143,23 @@ Is a network plotted at t₁, t₂, or the midpoint? The ambiguity is 30 days �
 
 **The offset is exactly 355 at all five anchors, with zero drift across 16 years.** That is stronger than expected: the paper's trading calendar and the modern Yahoo one agree day-for-day from 1991 to 2007. Since the paper is 337 days short overall (6,008 vs our 6,345), **essentially all of that shortfall must fall before May 1991** — either their panel effectively begins around 1987 despite the stated January 1986 start, or their 1986–91 data is heavily gapped. Fig. 8 cannot separate those, but it does rule out the gap being spread across the sample. Note the implication: **the paper's stated date range and its own `C_p` = 6,008 are not mutually consistent on any modern NYSE calendar.**
 
-**Correction to the pre-registered choice.** `PLAN.md` adopted **t₂** a priori, reasoning that a network is only knowable at window close. The anchors do not support that:
+**Resolved: t₂, confirmed twice independently.**
 
-| Convention | predicted offset | residual vs. observed 355 |
-|---|---|---|
-| t₁ (window start) | 337 | +18 days |
-| **midpoint** | **352** | **+3 days** |
-| t₂ (window end) | 367 | −12 days |
+The anchors fix, for each convention, where the paper's day 1 must sit on our calendar; `C_p` = 6,008 then fixes where its last day must sit. A convention whose implied last day runs past the end of our calendar is impossible, because the paper's data ends in February 2011 and ours ends 2011-02-28:
 
-**Midpoint fits four times better than either alternative.** The convention is therefore held provisional rather than settled: Phase 2 checks Black Monday alignment against Fig. 3 as an independent tiebreaker, and whichever wins, both the choice and its residual go in the report. A 3-day residual is within the noise of "≈337 missing days somewhere before 1991"; 12–18 days is not.
+| Convention | implied first day | implied last day | verdict |
+|---|---|---|---|
+| t₁ (window start) | 1987-05-29 | past 2011-02-28 | impossible |
+| midpoint | 1987-05-07 | past 2011-02-28 | impossible |
+| **t₂ (window end)** | **1987-04-15** | **2011-02-09** | **consistent** |
 
-*(The working hypothesis previously recorded here — that our own missing-day filter would reproduce the 337-day gap, concentrated in 1986–87 — was **falsified**. Our panel drops zero days. The shortfall is a property of the paper's data, not of the completeness rule.)*
+**t₂ is the only convention that fits, and it fits exactly** — 6,008 days ending in February 2011, as stated.
+
+Phase 2 then confirms it from the data rather than from arithmetic. Our isolated-node count peaks at 152 (from a baseline near 0) in a single window; under t₂ that window is stamped **1987-10-19, Black Monday itself, to the day.** Under midpoint it would be stamped 21 days before the crash and under t₁ 45 days before — i.e. both alternatives would show the network shattering *before* the event that shattered it.
+
+**The corollary is a substantive finding about the paper: its data does not begin in January 1986 as stated, but around April 1987.** The stated date range and the reported `C_p` = 6,008 cannot both be true. This also explains why Fig. 4's x-axis starts at 1988 and Fig. 3's panel opens in August 1987.
+
+*(Two superseded readings are kept here as record. First: the hypothesis that our own missing-day filter would reproduce the 337-day gap was **falsified** — our panel drops zero days. Second: an initial comparison concluded "midpoint fits four times better", by wrongly assuming the paper's panel ends on our last day rather than 6,008 days after its own start. Fixing that assumption reverses the conclusion.)*
 
 ---
 

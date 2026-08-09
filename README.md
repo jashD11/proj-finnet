@@ -84,10 +84,14 @@ share 29/30 of their data, so ~200 effectively independent points are presented 
 correction, and the crisis-detection evaluation the paper's own flowchart promises but never
 performs, are the parts worth reading.
 
-**Replication status — Phase 0 of 9 complete** (universe and price panel). N = 377 NYSE stocks ×
-6,345 trading days, 1986-01-02 → 2011-02-28, against the paper's 348 × 6,008. Nothing is
-reproduced yet; see [`paper3_market_modularity/CLAUDE.md`](paper3_market_modularity/CLAUDE.md) §8
-for the phase checklist and §9 for known deviations.
+**Replication status — Phases 0–2 of 9 complete** (data, returns, network sequence).
+N = 360 NYSE stocks × 6,345 trading days, 1986-01-02 → 2011-02-28, against the paper's 348 ×
+6,008; 6,315 daily networks of 6,462 edges each. No claim of the paper has been tested yet —
+communities start at Phase 3. Two findings so far: the paper's stated January 1986 start is
+inconsistent with its own reported 6,008 closes (its data appears to begin around April 1987),
+and pure i.i.d. noise put through the same construction yields τ = 0.241 against a real
+typical-day τ of 0.444. See [`paper3_market_modularity/CLAUDE.md`](paper3_market_modularity/CLAUDE.md)
+§8 for the phase checklist and §9 for known deviations.
 
 Requires `python-igraph` (Louvain, exact clique number, betweenness) and, on this machine, the
 `/opt/anaconda3` interpreter rather than `.venv`, which lacks `yfinance` and `pyarrow`.
@@ -96,6 +100,7 @@ Requires `python-igraph` (Louvain, exact clique number, betweenness) and, on thi
 cd paper3_market_modularity
 python -m pytest tests/
 python data/fetch_data.py                  # one-time price download (~10 min)
-python experiments/exp1_data.py            # Phase 0 → data/UNIVERSE.md
+python experiments/exp1_data.py            # Phases 0–1 → data/UNIVERSE.md, data/QUALITY.md
+python experiments/exp2_networks.py        # Phase 2 → figures/fig2_networks.png
 jupyter notebook replication_notebook.ipynb
 ```

@@ -96,17 +96,26 @@ before May 1991.** Either their panel starts around 1987 despite the stated
 January 1986, or their 1986–91 data is heavily gapped; Fig. 8 cannot separate
 those, but it rules out the gap being spread across the sample.
 
-Residual against the offset the three candidate timestamp conventions predict:
+Each convention implies a different position for the paper's day 1, and
+`C_p` = 6,008 then fixes its last day. A convention whose implied last day runs
+past the end of our calendar is impossible, because the paper's data ends in
+February 2011 (`results/tables/convention_feasibility.csv`):
 
-| Convention | predicted offset | residual vs. observed 355 |
-|---|---|---|
-| t₁ (window start) | 337 | +18 days |
-| **midpoint** | **352** | **+3 days** |
-| t₂ (window end) | 367 | −12 days |
+| Convention | implied first day | implied last day | verdict |
+|---|---|---|---|
+| t₁ (window start) | 1987-05-29 | past 2011-02-28 | impossible |
+| midpoint | 1987-05-07 | past 2011-02-28 | impossible |
+| **t₂ (window end)** | **1987-04-15** | **2011-02-09** | **consistent** |
 
-**Midpoint fits best by a factor of four.** This contradicts the a-priori choice
-of t₂ recorded in `PLAN.md`. The convention is left provisional until Phase 2
-checks Black Monday alignment against Fig. 3, which is the independent tiebreaker.
+**t₂ is the only convention that fits, and it fits exactly** — 6,008 days ending
+in February 2011, as the paper states. Phase 2 confirms it independently: under
+t₂ the isolated-node peak lands precisely on 1987-10-19, Black Monday itself,
+whereas midpoint and t₁ would stamp the crash-containing network 21 and 45 days
+*before* the crash.
+
+The corollary is a substantive finding about the paper: **its data does not
+begin in January 1986 as stated, but around April 1987.** The stated range and
+the reported `C_p` cannot both be true.
 
 ## Differences from the paper
 
@@ -115,7 +124,7 @@ checks Black Monday alignment against Fig. 3, which is the independent tiebreake
 | Candidate pool | 3,799 NYSE stocks (contemporaneous) | 1575 NYSE common stocks (currently listed) |
 | Universe N | 348 | 377 |
 | Closes per stock | 6,008 | 6345 |
-| Networks N_w | 5,978 | 6314 |
+| Networks N_w | 5,978 | 6315 |
 | Window | Jan 1986 – Feb 2011 | 1986-01-02 – 2011-02-28 |
 | Price series | unstated (assumed adjusted) | explicitly adjusted |
 | Missing-day policy | unstated | `drop_days`, alternative implemented |
