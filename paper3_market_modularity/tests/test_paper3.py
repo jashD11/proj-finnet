@@ -24,6 +24,8 @@ from data.universe import to_yahoo_symbol  # noqa: E402
 from net.communities import (MixingStore, community_sizes,  # noqa: E402
                              louvain_partitions, mixing_matrix, modularity,
                              modularity_from_mixing, relabel_by_size)
+from net.nullmodels import (block_probabilities, community_graph,  # noqa: E402
+                            configuration_graph)
 from net.construct import (build_network_sequence, decode_pairs,  # noqa: E402
                            log_returns, mean_correlation_series, n_windows,
                            target_edge_count, threshold_window,
@@ -360,6 +362,95 @@ def test_mixing_store_round_trips_ragged_days(tmp_path):
         Pi, sz = back[w]
         assert np.array_equal(Pi, pis[w])
         assert np.array_equal(sz, sizes[w])
+
+
+# ── Phase 4: null models ───────────────────────────────────────────────────
+
+def test_block_probabilities_follow_equation_2():
+    """pi_aa = 2*Pi_aa/(|a|(|a|-1)), pi_ab = Pi_ab/(|a||b|)."""
+    Pi = np.array([[6, 4], [0, 3]], dtype=np.int64)   # upper-triangular
+    sizes = np.array([4, 3])
+    P = block_probabilities(Pi, sizes)
+    assert np.isclose(P[0, 0], 2 * 6 / (4 * 3))
+    assert np.isclose(P[1, 1], 2 * 3 / (3 * 2))
+    assert np.isclose(P[0, 1], 4 / (4 * 3))
+    assert np.allclose(P, P.T)
+    assert ((P >= 0) & (P <= 1)).all()
+
+
+def test_block_probabilities_handle_singleton_communities():
+    """Black Monday leaves 152 singleton communities; |a|(|a|-1) = 0 for each,
+    and a division by zero there would poison the whole crisis period."""
+    Pi = np.array([[0, 1], [0, 0]], dtype=np.int64)
+    P = block_probabilities(Pi, np.array([1, 1]))
+    assert np.isfinite(P).all()
+    assert P[0, 0] == 0.0 and P[1, 1] == 0.0
+    assert np.isclose(P[0, 1], 1.0)
+
+
+def test_community_graph_reproduces_the_planted_modularity():
+    """The unit test for Eq. 2: a network generated from Pi and the sizes must
+    have roughly the modularity of the partition those came from."""
+    sizes = np.array([40, 40, 40])
+    Pi = np.array([[300, 30, 30], [0, 300, 30], [0, 0, 300]], dtype=np.int64)
+    planted = np.repeat(np.arange(3), sizes)
+    rng = np.random.default_rng(0)
+    qs = []
+    for _ in range(8):
+        g, ne = community_graph(sizes, Pi, rng)
+        assert g.vcount() == 120
+        qs.append(modularity(g, planted))
+    target = modularity_from_mixing(Pi, sizes)
+    assert abs(np.mean(qs) - target) < 0.03
+
+
+def test_community_graph_edge_count_is_random_not_exact():
+    """Audit D2, kept deliberately: independent coin flips match the target
+    edge count only in expectation. A generator that matched it exactly would
+    be a different model from the paper's."""
+    sizes = np.array([30, 30])
+    Pi = np.array([[200, 50], [0, 200]], dtype=np.int64)
+    rng = np.random.default_rng(1)
+    counts = [community_graph(sizes, Pi, rng)[1] for _ in range(40)]
+    assert len(set(counts)) > 1
+    assert abs(np.mean(counts) - Pi.sum()) < 0.05 * Pi.sum()
+
+
+def test_configuration_rewire_preserves_degrees_and_edge_count_exactly():
+    g = _two_cliques(30)
+    before = sorted(g.degree())
+    g2, loss = configuration_graph(g, seed=3, method="rewire")
+    assert sorted(g2.degree()) == before
+    assert g2.ecount() == g.ecount()
+    assert loss["n_multi_collapsed"] == 0
+    assert not any(g2.is_loop())
+    assert max(g2.count_multiple()) == 1
+
+
+def test_configuration_rewire_actually_randomizes():
+    """Preserving the degree sequence is necessary but not sufficient: if the
+    rewiring did nothing, the null would equal the real network."""
+    g = _two_cliques(40)
+    g2, _ = configuration_graph(g, seed=3, method="rewire")
+    shared = len(set(map(tuple, map(sorted, g2.get_edgelist())))
+                 & set(map(tuple, map(sorted, g.get_edgelist()))))
+    assert shared < g.ecount()
+    assert modularity(g2, louvain_partitions(g2, [0])[0]) < modularity(
+        g, louvain_partitions(g, [0])[0])
+
+
+def test_stub_matching_loses_edges_which_is_why_it_is_not_the_default():
+    """Audit D4 made concrete: collapsing multi-edges lowers the null's density
+    below the graph it is compared against."""
+    g = _two_cliques(40)
+    _, loss = configuration_graph(g, seed=3, method="stub")
+    assert loss["edges_after"] < loss["edges_before"]
+    assert loss["n_multi_collapsed"] + loss["n_self_loops"] > 0
+
+
+def test_configuration_graph_rejects_unknown_method():
+    with pytest.raises(ValueError):
+        configuration_graph(_two_cliques(10), seed=0, method="vl")
 
 
 if __name__ == "__main__":

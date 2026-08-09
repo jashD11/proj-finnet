@@ -153,7 +153,12 @@ full Phase 2–6 rerun.
       Two findings: Louvain on i.i.d. noise scores Q = 0.2246, i.e. the same as
       the real market, so only Q's variation is informative; and partition
       quality has a ≈14-day half-life, putting t_Δ = 100 on the plateau.*
-- [ ] Phase 4 — null models, noise floor
+- [x] Phase 4 — null models, noise floor
+      *126,300 graphs in 194 s on 7 workers; 10/10 pass. Eq. 2 validated (MAE
+      0.0014 vs the planted partition). Configuration floor Q = 0.1065 ± 0.0145,
+      reproducing the ≈0.10 the paper draws. Control: i.i.d. noise shows 80 % of
+      the market's excess-over-floor, so the excess is largely correlation-matrix
+      geometry, not market structure.*
 - [ ] Phase 5 — the eight measures
 - [ ] Phase 6 — scoring, **overlap correction**, compression check
 - [ ] Phase 7 — PCA with the omitted diagnostics
@@ -174,4 +179,5 @@ Filled in as phases complete. See `PITFALLS.md` for the audit items each one map
 | D6 | Return quality gates | none | **17 further tickers dropped** | Frozen-price runs up to 743 days would have produced guaranteed isolated nodes, faking the Fig. 3B crisis signature; plus one bad print and unadjusted corporate actions. See `data/QUALITY.md` (A2/A3). |
 | D7 | Analysis universe | N = 348 | **N = 360** | Phase 0's 377 completeness survivors minus the 17 removed by D6. |
 | D8 | Louvain runs per day | 1 (implied) | **10 seeds, seed 0 canonical** | The extra nine are never used downstream — they only measure how much of the daily Q series is algorithmic (B1). Seed 0 keeps the pipeline equivalent to a single run. |
+| D10 | Configuration-model method | unstated | **degree-preserving edge swaps (5× m)** | Stub matching loses 13 % of edges to collapsed multi-edges, making the null sparser than the graph it is compared against; `vl` needs a connected realization, which crisis days do not have. Both alternatives implemented behind `CONFIG_METHOD` (D4). |
 | D9 | Acceptance criterion on the three modularities | — | **`Q_stale ≤ Q_dyn`, not `Q_fixed ≤ Q_lagged ≤ Q_dyn`** | The plan asserted a full ordering. Only the first holds (0/6,215 violations); the fixed-vs-lagged ordering has no theorem behind it and fails on 23 % of days. Corrected, and the violation reported — see `PITFALLS.md` B7. |

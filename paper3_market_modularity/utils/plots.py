@@ -297,6 +297,65 @@ def plot_partition_decay(lags, q_by_lag, floor, q_real, q_noise, lag_marker=100,
     return _finish(fig, save)
 
 
+# ── Phase 4 ────────────────────────────────────────────────────────────────
+
+def plot_noise_floor(dates, q_real, q_comm, q_conf, conf_sd=None,
+                     paper_floor=0.10, stamp="t2", save=None):
+    """The figure the paper's Fig. 6(a1) implies but never labels with a number.
+
+    Three entities, so three categorical slots in their project-wide roles:
+    real networks blue, community null orange, configuration null aqua.
+    """
+    fig, ax = plt.subplots(figsize=(9.5, 4.4))
+    shade_crises(ax)
+    # The community null is drawn first and thicker, the real series thin on
+    # top: the two agree so closely that whichever is painted last erases the
+    # other, and that agreement is precisely the claim under test.
+    ax.plot(dates, q_comm, color=COMMUNITY, lw=1.8, alpha=0.85,
+            label="community null (Eq. 2), 10 replicates")
+    ax.plot(dates, q_real, color=INFERRED, lw=0.7, label="real market networks")
+    if conf_sd is not None:
+        ax.fill_between(dates, q_conf - conf_sd, q_conf + conf_sd,
+                        color=CONFIG, alpha=0.3, lw=0)
+    ax.plot(dates, q_conf, color=CONFIG, lw=0.9,
+            label="configuration null — the noise floor")
+    ax.axhline(paper_floor, color=INK_SECONDARY, lw=1.0, ls=":")
+    ax.annotate(f"the paper's drawn floor ≈ {paper_floor:.2f}",
+                xy=(dates[len(dates) // 12], paper_floor), xytext=(0, -13),
+                textcoords="offset points", fontsize=8.5, color=INK_SECONDARY)
+    ax.legend(loc="upper left", ncol=2)
+    _style(ax, "Modularity against the two nulls — everything below the aqua line is the degree sequence",
+           "modularity Q", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+def plot_null_validation(q_real, q_planted, edges_comm, real_edges, save=None):
+    """Two generator checks, as scatter and histogram rather than assertions."""
+    fig, axes = plt.subplots(1, 2, figsize=(9.8, 4.0))
+
+    ax = axes[0]
+    lim = (min(q_real.min(), q_planted.min()) - 0.01,
+           max(q_real.max(), q_planted.max()) + 0.01)
+    ax.plot(lim, lim, color=INK_SECONDARY, lw=1.0, ls=":", label="y = x")
+    ax.scatter(q_real, q_planted, s=3, color=COMMUNITY, alpha=0.25, lw=0)
+    ax.set_xlim(lim)
+    ax.set_ylim(lim)
+    ax.legend(loc="upper left")
+    _style(ax, "A · Eq. 2 preserves the modularity it was built from",
+           "Q of the generated network, planted partition", "Q of the real network")
+
+    ax = axes[1]
+    rel = 100.0 * (edges_comm / real_edges - 1.0)
+    ax.hist(rel, bins=60, color=COMMUNITY, alpha=0.85, lw=0)
+    ax.axvline(0, color=INK, lw=1.0, ls=":")
+    ax.annotate(f"mean {rel.mean():+.3f} %\nworst day {np.abs(rel).max():.2f} %",
+                xy=(0.97, 0.9), xycoords="axes fraction", ha="right",
+                fontsize=8.5, color=INK_SECONDARY)
+    _style(ax, "B · Independent coin flips only match the edge count in expectation (D2)",
+           "days", "generated edges vs real, %")
+    return _finish(fig, save)
+
+
 def plot_event_zoom(dates, series_map, start, end, title, ylabel_map=None,
                     onset=None, save=None):
     """Zoom several series onto one event window, one panel per series."""

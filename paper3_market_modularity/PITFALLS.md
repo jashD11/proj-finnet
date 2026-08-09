@@ -29,13 +29,13 @@
 | B3 | Resolution limit | THINK | 3 | **addressed (P3)** |
 | B4 | Number of communities *k* never reported | EASY | 3 | **addressed (P3)** |
 | B5 | Isolated nodes each become their own community | THINK | 3, 6 | **confirmed (P3)**, compression test P6 |
-| B6 | Modularity noise floor never drawn | EASY | 4 | pending |
+| B6 | Modularity noise floor never drawn | EASY | 4 | **addressed (P4)** |
 | B7 | *(new, P3)* t_Δ = 100 samples the plateau, not the decay | — | 3 | **new finding** |
 | C1 | Does modularity rise or fall in a crisis? | THINK | 8c | pending |
 | C2 | Crisis periods ill-defined | THINK | 0 | **addressed** |
 | D1 | Compression claim unverified | EASY | 6 | pending |
-| D2 | Coin-flip generation makes edge counts random | EASY | 4 | pending |
-| D3 | One realization per day, no error bars | EASY | 4–5 | pending |
+| D2 | Coin-flip generation makes edge counts random | EASY | 4 | **addressed (P4)** |
+| D3 | One realization per day, no error bars | EASY | 4–5 | **addressed (P4)**, P5 pending |
 | D4 | Rich-club reported raw, not normalized | EASY | 5 | pending |
 | E1 | **Window overlap inflates every ρ — the big one** | EASY/THINK | 6 | pending |
 | E2 | ⟨χ²⟩ unnormalized, not comparable across measures | EASY | 6 | pending |
@@ -207,6 +207,12 @@ A corollary settles an expectation this replication got wrong. The plan asserted
 ### B6. The modularity noise floor is never drawn. [EASY]
 A structureless graph of this size and density scores Q ≈ 0.1 — visible as the green line in Fig. 6(a1). Normal-times values of 0.20–0.40 are only modestly above it, and the crisis value sits at it. We draw the configuration-model floor explicitly on every modularity figure from Phase 4 onward.
 
+*Our handling — Phase 4 reproduces the floor and then shows it is the wrong floor.* The configuration-model null gives **Q = 0.1065 ± 0.0145**, matching the ≈0.10 the paper draws but never states. The real market's 0.2215 sits **+0.115** above it, and that gap is the paper's evidence of modular organisation.
+
+**The control the paper never runs: put i.i.d. Gaussian returns through the entire pipeline and compare them against *their* degree-sequence null.** Result: Q = 0.2253 over a floor of 0.1332, an excess of **+0.0921** — **80 % of the market's excess is reproduced by data containing no communities whatsoever.**
+
+The mechanism is that a correlation matrix is positive semi-definite, so high ρ_ij and ρ_ik force ρ_jk up; thresholding one therefore yields a graph that is transitive by construction (noise transitivity 0.219), and transitive graphs are modular. A degree-sequence null cannot control for this because rewiring destroys the geometry along with the structure. Any modularity excess over a configuration model, in any paper using thresholded correlation networks, needs this control before it can be read as evidence about the system. Bounded by A5 remaining out of scope.
+
 ---
 
 ## C. The internal contradiction
@@ -237,11 +243,17 @@ Configuration model stores 348 numbers/day. Community model stores k + k(k+1)/2.
 ### D2. Coin-flip generation makes edge counts random, not exact. [EASY]
 Π_αβ is matched only in expectation. Fine for large blocks, sloppy for small ones — and after a crisis shatter, most blocks are small. We keep the paper's coin-flip generation and report realized-vs-target deviation per block rather than silently fixing it.
 
+*Our handling — measured in Phase 4, and it is a smaller problem than expected.* Over all 6,315 days the generated edge count averages **6,462 ± 70** against a real 6,462: bias **+0.002 %**, worst single day **1.42 %**, and within 3 % on **100 %** of days. The coin-flip variance is real but is roughly the sqrt(m) ≈ 80 you would predict, so it never approaches the size of the effects the paper reports. Kept unfixed, as the paper wrote it.
+
 ### D3. One realization per day, no error bars anywhere. [EASY]
 Both Louvain and the generative step are stochastic. Replicate spread is free. Clique number especially — a maximum over a random graph is a notoriously high-variance quantity. We run 10 replicates per day per model.
 
+*Our handling — done in Phase 4 for both generators* (126,300 graphs; every seed a pure function of `(FIT_SEED, day, replicate)`, so the run is bit-reproducible at any worker count). Carried into Phase 5 for the eight measures.
+
 ### D4. Rich-club is reported raw. [EASY]
 φ(k) rises with k even in random graphs, which is why it is conventionally normalized against a null. Not done here. We store both raw and configuration-normalized φ.
+
+*Related finding — Phase 4.* "Preserve the degree sequence" has two standard implementations and they are not interchangeable here. Classical stub matching (igraph's `Degree_Sequence`) emits self-loops and multi-edges; collapsing them to a simple graph **destroys 13.0 % of the edges on average and 22.2 % on the worst day**, so the null ends up materially sparser than the network it is being compared against — which confounds every density-sensitive measure (transitivity, path length, clique number) with an artifact of the generator. Degree-preserving edge swaps keep the degree sequence *and* the edge count exactly, on 100 % of days, and are used instead. igraph's third option, `vl`, cannot be used at all: it requires a connected realization, and the crisis networks contain hundreds of degree-0 nodes. Recorded in `net/nullmodels.CONFIG_METHOD`.
 
 ---
 
