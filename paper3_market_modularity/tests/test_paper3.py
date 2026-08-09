@@ -21,6 +21,9 @@ if ROOT not in sys.path:
 from data.fetch_data import build_panel  # noqa: E402
 from data.quality import longest_zero_run, quality_gate  # noqa: E402
 from data.universe import to_yahoo_symbol  # noqa: E402
+from net.communities import (MixingStore, community_sizes,  # noqa: E402
+                             louvain_partitions, mixing_matrix, modularity,
+                             modularity_from_mixing, relabel_by_size)
 from net.construct import (build_network_sequence, decode_pairs,  # noqa: E402
                            log_returns, mean_correlation_series, n_windows,
                            target_edge_count, threshold_window,
@@ -255,6 +258,108 @@ def test_window_timestamps_offsets_and_validation():
     assert len(window_timestamps(dates, 30, "t2")) == n_windows(len(dates), 30)
     with pytest.raises(ValueError):
         window_timestamps(dates, 30, "close")
+
+
+# ── Phase 3: communities and modularity ────────────────────────────────────
+
+def _two_cliques(n=12):
+    """Two disjoint cliques joined by a single edge: k=2, Q close to 0.5."""
+    import igraph as ig
+    half = n // 2
+    edges = [(i, j) for i in range(half) for j in range(i + 1, half)]
+    edges += [(i, j) for i in range(half, n) for j in range(i + 1, n)]
+    edges.append((0, half))
+    return ig.Graph(n=n, edges=edges, directed=False)
+
+
+def test_louvain_finds_a_planted_two_clique_split():
+    g = _two_cliques()
+    P = louvain_partitions(g, [0])
+    assert P.shape == (1, 12)
+    assert int(P[0].max()) + 1 == 2
+    assert modularity(g, P[0]) > 0.4
+
+
+def test_louvain_is_reproducible_and_seeds_actually_differ():
+    """Both halves matter: without seeding the run is irreproducible, and if
+    the seed did nothing the ten-seed stability analysis would be vacuous."""
+    import igraph as ig
+    rng = np.random.default_rng(5)
+    n = 120
+    ij = set()
+    while len(ij) < 900:
+        a, b = rng.integers(0, n, 2)
+        if a != b:
+            ij.add((min(a, b), max(a, b)))
+    g = ig.Graph(n=n, edges=sorted(ij), directed=False)
+    assert np.array_equal(louvain_partitions(g, [1]), louvain_partitions(g, [1]))
+    many = louvain_partitions(g, range(12))
+    assert len({m.tobytes() for m in many}) > 1
+
+
+def test_relabel_by_size_orders_communities_descending():
+    m = np.array([2, 2, 0, 1, 1, 1, 2, 2])       # sizes: 2->4, 1->3, 0->1
+    out = relabel_by_size(m)
+    _, counts = np.unique(out, return_counts=True)
+    assert list(counts) == sorted(counts, reverse=True)
+    # Relabelling must not change the grouping, only the names.
+    assert len(np.unique(out)) == len(np.unique(m))
+    for a in range(len(m)):
+        for b in range(len(m)):
+            assert (m[a] == m[b]) == (out[a] == out[b])
+
+
+def test_mixing_matrix_counts_every_edge_exactly_once():
+    g = _two_cliques()
+    ep = np.array(g.get_edgelist())
+    ep = np.column_stack((ep.min(axis=1), ep.max(axis=1)))
+    memb = relabel_by_size(np.asarray(louvain_partitions(g, [0])[0]))
+    Pi = mixing_matrix(ep, memb)
+    assert Pi.sum() == g.ecount()
+    assert np.allclose(Pi, np.triu(Pi))          # upper-triangular by contract
+    assert Pi[0, 1] == 1                          # the single bridging edge
+
+
+def test_modularity_is_recoverable_from_the_compressed_summary():
+    """Phase 4's null model only ever sees Pi and the community sizes. If those
+    two objects do not determine Q, the paper's compression claim is untestable
+    before it is even tested."""
+    g = _two_cliques(16)
+    memb = relabel_by_size(np.asarray(louvain_partitions(g, [0])[0]))
+    ep = np.array(g.get_edgelist())
+    ep = np.column_stack((ep.min(axis=1), ep.max(axis=1)))
+    Pi = mixing_matrix(ep, memb)
+    assert np.isclose(modularity_from_mixing(Pi, community_sizes(memb)),
+                      modularity(g, memb), atol=1e-12)
+
+
+def test_random_partition_scores_about_zero():
+    """The floor every modularity number in the paper must be read against."""
+    g = _two_cliques(20)
+    rng = np.random.default_rng(0)
+    qs = []
+    for _ in range(30):
+        m = rng.integers(0, 2, size=20)
+        qs.append(modularity(g, m))
+    assert abs(np.mean(qs)) < 0.15
+
+
+def test_mixing_store_round_trips_ragged_days(tmp_path):
+    """k swings from 4 to 156 across the sample, so storage must be ragged."""
+    pis, sizes = [], []
+    for k in (2, 5, 3):
+        Pi = np.triu(np.arange(k * k).reshape(k, k))
+        pis.append(Pi)
+        sizes.append(np.arange(1, k + 1))
+    store = MixingStore.build(pis, sizes)
+    path = str(tmp_path / "mix.npz")
+    store.save(path)
+    back = MixingStore.load(path)
+    assert len(back) == 3
+    for w in range(3):
+        Pi, sz = back[w]
+        assert np.array_equal(Pi, pis[w])
+        assert np.array_equal(sz, sizes[w])
 
 
 if __name__ == "__main__":

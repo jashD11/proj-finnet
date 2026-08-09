@@ -24,12 +24,13 @@
 | A8 | Negative correlations structurally invisible | THINK | 2 | **addressed** |
 | A9 | Binarization discards edge weights | THINK | 2 | **addressed** |
 | A10 | Window timestamp convention unstated | EASY* | 2 | **RESOLVED — t₂** |
-| B1 | Louvain degeneracy, no seed, no stability check | EASY | 3, 8f | pending |
+| B1 | Louvain degeneracy, no seed, no stability check | EASY | 3, 8f | **addressed (P3)** |
 | B2 | Independent daily runs mix jitter with real change | THINK | 8f | pending |
-| B3 | Resolution limit | THINK | 3 | pending |
-| B4 | Number of communities *k* never reported | EASY | 3 | pending |
-| B5 | Isolated nodes each become their own community | THINK | 3, 6 | pending |
+| B3 | Resolution limit | THINK | 3 | **addressed (P3)** |
+| B4 | Number of communities *k* never reported | EASY | 3 | **addressed (P3)** |
+| B5 | Isolated nodes each become their own community | THINK | 3, 6 | **confirmed (P3)**, compression test P6 |
 | B6 | Modularity noise floor never drawn | EASY | 4 | pending |
+| B7 | *(new, P3)* t_Δ = 100 samples the plateau, not the decay | — | 3 | **new finding** |
 | C1 | Does modularity rise or fall in a crisis? | THINK | 8c | pending |
 | C2 | Crisis periods ill-defined | THINK | 0 | **addressed** |
 | D1 | Compression claim unverified | EASY | 6 | pending |
@@ -92,6 +93,12 @@ Halts are frequent precisely during crises. Forward-filling produces zero return
 *Our handling:* not corrected — correcting it would replicate a different paper. Quantified instead: Phase 2 runs the same pipeline on i.i.d. Gaussian returns of identical shape.
 
 **Phase 2 result — the audit's prediction is confirmed almost exactly.** Pure i.i.d. Gaussian noise, 360 series × 30 observations, put through the identical construction, gives **τ = 0.241 ± 0.001** and a network that is just as full and just as connected as the real one (0 isolated nodes, mean retained edge weight 0.324). The audit predicted ρ ≈ 0.24 from the 1/√29 ≈ 0.19 per-entry noise alone.
+
+**Phase 3 result — the same reference applied to modularity, and this one is worse.** Running Louvain on those same pure-noise networks gives **Q = 0.2246 ± 0.0067** (median k = 7). The real market networks give **Q = 0.2215 ± 0.0413** (median k = 9). *The average level of the paper's central quantity is exactly what structureless data produces under its own construction* — noise is, if anything, marginally more modular. What separates the real series is not its level but its **variance**: 6× that of the noise reference, with a range of 0.09–0.42 against noise's 0.21–0.24.
+
+The consequence for reading the paper: no statement of the form "the market network has modularity ≈ 0.2, therefore it is modularly organised" is supported. Only statements about *changes* in Q — the crisis drops, the 2002 break — survive this reference. The paper makes both kinds of statement and does not distinguish them.
+
+This comparison is bounded by A5 being out of scope: real returns carry a dominant market factor that i.i.d. noise does not, and that factor pushes measured modularity *down*. A factor-matched null would be the stronger test and is not run here, so this is evidence that the *level* of Q is uninformative — not evidence that the real market is indistinguishable from noise.
 
 Our real τ ranges 0.263–0.861 with a mean of **0.444**. So on a *typical* day the threshold sits only ~0.20 above the level pure noise would produce unaided, and the quietest days in the sample (τ ≈ 0.26) are barely distinguishable from noise at all. The crisis days are unambiguous — τ = 0.861 on Black Monday is far outside anything noise generates — but the paper's normal-times networks contain a great deal of estimation error, and it is never acknowledged.
 
@@ -168,6 +175,8 @@ Phase 2 then confirms it from the data rather than from arithmetic. Our isolated
 ### B1. Louvain degeneracy, no seed, no stability check. [EASY]
 Modularity's landscape has exponentially many near-optimal partitions with very different structure. Louvain also depends on node ordering. Fix: 10 seeds per day, report the spread in Q and partition agreement.
 
+*Our handling — addressed in Phase 3, and the damage is real.* Ten seeds per day, all retained; seed 0 is the canonical `C(t)` so the pipeline stays as faithful as the paper's single run. On the median day the ten seeds disagree by **sd 0.0038, range 0.0118** in Q. The median day-to-day move in Q is **0.0056**. So the seed-to-seed spread on a single day is **2.09× the typical daily move, and exceeds it on 77.9 % of days.** Any reading of the daily modularity series finer than ~0.012 in Q is reading Louvain, not the market. Partition-level agreement (NMI) is Phase 8f.
+
 ### B2. Independent daily runs mix algorithmic jitter with real change. [THINK]
 No temporal coupling between consecutive days, so you cannot separate "the market changed" from "Louvain landed elsewhere." Multilayer/temporal community detection exists for exactly this — and the paper cites Mucha, Porter, and Fenn without using their method.
 
@@ -176,11 +185,24 @@ No temporal coupling between consecutive days, so you cannot separate "the marke
 ### B3. Resolution limit. [THINK]
 Modularity maximization cannot resolve communities smaller than ~√(2m) ≈ 110 edges here. Genuine small sectors get absorbed. This mechanically bounds *k*, which determines the size of Π, which determines whether the compression claim holds.
 
+*Our handling — measured in Phase 3.* With 6,462 edges the bound is √(2m) ≈ 114 edges, and the realized median *k* is **9** communities over 360 stocks — i.e. groups averaging 40 stocks, far coarser than the ~20 GICS sub-industries a 360-stock NYSE panel spans. The resolution limit is therefore binding, not hypothetical: whatever the market's sector structure is, Louvain at this density cannot report more than about a dozen groups. Consequence for the compression claim carried into Phase 6.
+
 ### B4. The number of communities *k* is never reported. [EASY]
 Eq. 2's behaviour and Section IV's central claim both depend on it entirely. We store and report k[t] for every day.
 
+*Our handling — addressed in Phase 3.* `k[t]` is stored for all 6,315 days and for all ten seeds. **Median 9, range 4–156**, maximum on 1987-10-19. Median 42 inside the sharp-tier crisis bands against 9 outside — the number of communities is itself a crisis indicator, and the paper never plots it.
+
 ### B5. Isolated nodes each become their own community. [THINK]
 The paper states components are always assigned distinct communities. During Black Monday the graph shatters into a hub plus hundreds of isolates, so *k* explodes and Π becomes huge and nearly empty — on exactly the days the paper cares most about. This may invert the compression argument where the story lives. Tested jointly with D1 in Phase 6.
+
+*Our handling — the prediction is confirmed in Phase 3.* On 1987-10-19 the partition contains **156 communities, 152 of them singletons**, against a median of 9 on an ordinary day. Π therefore grows from a 9×9 summary to a 156×156 one, i.e. from 45 numbers to 12,246, on the single day the paper's argument most needs the compression to hold. Storage had to be made ragged for exactly this reason (`net/communities.MixingStore`). Whether this inverts the compression claim is the Phase 6 test.
+
+### B7. The lag t_Δ = 100 is past the point where a partition means anything. *(not in the original audit — found in Phase 3)*
+The paper reports a "lagged" modularity using a partition 100 trading days stale, and never says why 100. Measuring `Q(g_t, C(t−L))` across L = 0…500 gives a decay curve with a **half-life of ≈ 14 trading days**: Q falls from 0.226 at L = 0 to 0.081 at L = 20, then flattens onto a plateau of ≈ 0.03 from L = 50 onward, against a random-partition floor of −0.004.
+
+So t_Δ = 100 does not sample the decay — it samples the plateau, where only **15.4 %** of Q survives and a further doubling of the lag costs almost nothing. The paper's lagged curve is therefore close to a flat "stale partitions are worthless" line rather than a measurement of how fast structure turns over, and the interesting quantity — that ~14-day half-life, which is what "modular dynamics" should mean — is not reported at any point.
+
+A corollary settles an expectation this replication got wrong. The plan asserted `Q_fixed ≤ Q_lagged ≤ Q_dyn` on every day and called a violation a bug. `Q_stale ≤ Q_dyn` holds on **all 6,215 days**, as it must. But `Q_fixed ≤ Q_lagged` fails on 1,451 days (23.3 %), and the failures are not random: **46 % of days before 1999, 0 % after.** There is no theorem behind that ordering — both quantities sit near the random-partition floor, where their ranking is not meaningful, and the fixed partition `C(0)` additionally encodes a stable split that a 100-day-old Louvain fit does not. The acceptance test was corrected to assert what is actually required; the violation is reported here rather than asserted away.
 
 ### B6. The modularity noise floor is never drawn. [EASY]
 A structureless graph of this size and density scores Q ≈ 0.1 — visible as the green line in Fig. 6(a1). Normal-times values of 0.20–0.40 are only modestly above it, and the crisis value sits at it. We draw the configuration-model floor explicitly on every modularity figure from Phase 4 onward.

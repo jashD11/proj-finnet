@@ -17,3 +17,7 @@ paper3_market_modularity/data/raw_closes.parquet
 paper3_market_modularity/data/panel_clean.parquet
 paper3_market_modularity/data/returns.npy
 paper3_market_modularity/data/edges.npy
+
+# paper 3: Phase 3 derived artifacts (rebuilt by experiments/exp3_communities.py)
+paper3_market_modularity/data/partitions.npy
+paper3_market_modularity/data/mixing.npz

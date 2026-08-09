@@ -197,6 +197,106 @@ def plot_network_construction(dates, tau, n_isolated, n_below_neg_tau,
     return _finish(fig, save)
 
 
+# ── Phase 3 ────────────────────────────────────────────────────────────────
+
+# The three modularities are not three entities — they are one quantity at
+# three levels of partition staleness, so they take an ordinal ramp of the
+# single "inferred network" hue rather than three categorical slots. Fresh is
+# darkest. Steps 650/450/250 of the blue ramp; 250 is the documented ordinal
+# floor on a light surface (2.06:1), so the palest line still reads.
+STALENESS = ("#104281", "#2a78d6", "#86b6ef")   # dynamical / lagged / fixed
+
+
+def plot_modularity_overview(dates, q_dyn, k, seed_lo=None, seed_hi=None,
+                             stamp="t2", save=None):
+    """Fig. 4 companion: the modularity series with its Louvain noise band.
+
+    The band is ±1 sd across the ten Louvain seeds on each day. Drawing it is
+    the whole point: the paper reports a single Louvain run per day, and any
+    daily feature narrower than this band is an artifact of the algorithm.
+    """
+    fig, axes = plt.subplots(2, 1, figsize=(9.5, 6.4), sharex=True)
+
+    ax = axes[0]
+    shade_crises(ax)
+    if seed_lo is not None:
+        ax.fill_between(dates, seed_lo, seed_hi, color=INFERRED, alpha=0.35, lw=0,
+                        label="±1 sd across 10 Louvain seeds")
+    ax.plot(dates, q_dyn, color=STALENESS[0], lw=0.7, label="dynamical Q(t), seed 0")
+    ax.legend(loc="upper left", ncol=3)
+    _style(ax, "A · Dynamical modularity — with the Louvain seed spread it is usually read without",
+           "modularity Q")
+
+    ax = axes[1]
+    shade_crises(ax, label=False)
+    ax.plot(dates, k, color=ACCENT, lw=0.7)
+    _style(ax, "B · Number of communities k(t) — singletons make it spike when the network shatters",
+           "communities detected", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+def plot_three_modularities(dates, q_dyn, q_lagged, q_fixed, q_diff,
+                            lag=100, stamp="t2", save=None):
+    """Fig. 5: the same graphs scored with partitions of three different ages."""
+    fig, axes = plt.subplots(2, 1, figsize=(9.5, 6.8), sharex=True)
+
+    ax = axes[0]
+    shade_crises(ax)
+    for series, colour, label in (
+            (q_fixed, STALENESS[2], "fixed — C(0), first day's partition"),
+            (q_lagged, STALENESS[1], f"lagged — C(t − {lag})"),
+            (q_dyn, STALENESS[0], "dynamical — C(t), re-detected daily")):
+        ax.plot(dates, series, color=colour, lw=0.7, label=label)
+    ax.legend(loc="upper left", ncol=2)
+    _style(ax, "A · One modularity formula, three partition ages", "modularity Q")
+
+    ax = axes[1]
+    shade_crises(ax, label=False)
+    ax.plot(dates, q_diff, color=ACCENT, lw=0.7)
+    ax.axhline(0, color=INK_SECONDARY, lw=0.8, ls=":")
+    _style(ax, f"B · Q_dyn − Q_lagged — modularity that exists only because communities are allowed to move",
+           "Q gained by re-detecting", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+def plot_partition_decay(lags, q_by_lag, floor, q_real, q_noise, lag_marker=100,
+                         save=None):
+    """What a modularity number is worth: how fast it decays, and its floor.
+
+    The noise reference is drawn in neutral grey rather than a categorical hue,
+    following the same rule as the crisis bands: it is context to read the real
+    series against, not a fourth entity competing with it.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(9.8, 3.9))
+
+    ax = axes[0]
+    lags = np.asarray(lags, dtype=float)
+    ax.axhline(floor, color=CRISIS_SHADE, lw=1.2, ls="--",
+               label=f"random partition, same sizes ({floor:+.3f})")
+    ax.plot(lags, q_by_lag, color=INFERRED, lw=1.6, marker="o", ms=4,
+            label="Q(gₜ, C(t − L))")
+    ax.axvline(lag_marker, color=INK, lw=1.0, ls=":")
+    ax.annotate(f"the paper's t_Δ = {lag_marker}", xy=(lag_marker, q_by_lag[0] * 0.85),
+                xytext=(6, 0), textcoords="offset points", fontsize=8.5, color=INK)
+    ax.set_xscale("symlog", linthresh=1)
+    ax.set_xlim(0, lags.max() * 1.15)   # lag 0 exists; negative ticks do not
+    ax.legend(loc="lower left")
+    _style(ax, "A · Community structure has a half-life of days, not months",
+           "modularity Q", "partition age L (trading days, symlog)")
+
+    ax = axes[1]
+    bins = np.linspace(min(q_noise.min(), q_real.min()) - 0.01,
+                       max(q_noise.max(), q_real.max()) + 0.01, 70)
+    ax.hist(q_noise, bins=bins, color=CRISIS_SHADE, alpha=0.55, lw=0,
+            density=True, label="i.i.d. Gaussian returns (A4 reference)")
+    ax.hist(q_real, bins=bins, color=INFERRED, histtype="step", lw=1.4,
+            density=True, label="real market networks")
+    ax.legend(loc="upper right")
+    _style(ax, "B · The level of Q is what noise gives; only its spread is market",
+           "density", "dynamical modularity Q")
+    return _finish(fig, save)
+
+
 def plot_event_zoom(dates, series_map, start, end, title, ylabel_map=None,
                     onset=None, save=None):
     """Zoom several series onto one event window, one panel per series."""
