@@ -159,11 +159,27 @@ full Phase 2–6 rerun.
       reproducing the ≈0.10 the paper draws. Control: i.i.d. noise shows 80 % of
       the market's excess-over-floor, so the excess is largely correlation-matrix
       geometry, not market structure.*
-- [ ] Phase 5 — the eight measures
-- [ ] Phase 6 — scoring, **overlap correction**, compression check
-- [ ] Phase 7 — PCA with the omitted diagnostics
-- [ ] Phase 8 — extensions (8a, 8b, 8c, 8f)
-- [ ] Phase 9 — notebook + `REPLICATION_REPORT.md`
+- [x] Phase 5 — the eight measures
+      *132,615 graph evaluations in 21.5 min on 7 pinned workers; 10/10 pass.
+      Clique number on every day (max ω = 55). Both E6 conventions stored — the
+      graph is fragmented on 3,973 days and the two path-length readings
+      correlate only +0.391.*
+- [x] Phase 6 — scoring, **overlap correction**, compression check
+      *9/9 pass. E1 does NOT collapse the paper's evidence: mean ρ
+      0.783 → 0.777. The real results are E2 (the community
+      model beats the degree null on modularity alone), E5 (3 of 8 components
+      carry 90 % of the variance) and D1 (compression inverts in crises:
+      69% of days vs 34% of crisis days). 4 of 32 cells not reproduced.*
+- [x] Phase 7 — PCA with the omitted diagnostics
+      *6/6 pass. corr(PC1, date) = +0.439, not "essentially time". A classifier
+      separates the three clouds 98.6 % of the time against 33.3 % chance —
+      the separation the paper describes as agreement.*
+- [x] Phase 8 — extensions (8a, 8b, 8c, 8f)
+      *6/6 pass. τ(t) detects crises at AUC 0.807; modularity manages
+      0.538. C1 settled: nothing at onset, −0.50 sd over the next 60 days.*
+- [x] Phase 9 — notebook + `REPLICATION_REPORT.md`
+      *6/6 pass. 39 cells, every code cell sandwiched in markdown; fresh-kernel
+      Run-All in 3 s; `results/replication.html` exported.*
 
 ## 9. Known deviations
 
@@ -179,5 +195,6 @@ Filled in as phases complete. See `PITFALLS.md` for the audit items each one map
 | D6 | Return quality gates | none | **17 further tickers dropped** | Frozen-price runs up to 743 days would have produced guaranteed isolated nodes, faking the Fig. 3B crisis signature; plus one bad print and unadjusted corporate actions. See `data/QUALITY.md` (A2/A3). |
 | D7 | Analysis universe | N = 348 | **N = 360** | Phase 0's 377 completeness survivors minus the 17 removed by D6. |
 | D8 | Louvain runs per day | 1 (implied) | **10 seeds, seed 0 canonical** | The extra nine are never used downstream — they only measure how much of the daily Q series is algorithmic (B1). Seed 0 keeps the pipeline equivalent to a single run. |
+| D11 | Parallel execution | — | **BLAS threads pinned to 1 per worker** | Unpinned, 7 workers x 16 OpenBLAS threads on 8 cores made the pool 64 % *slower* than single-process. Measured 7.0x. See `utils/parallel.py`. |
 | D10 | Configuration-model method | unstated | **degree-preserving edge swaps (5× m)** | Stub matching loses 13 % of edges to collapsed multi-edges, making the null sparser than the graph it is compared against; `vl` needs a connected realization, which crisis days do not have. Both alternatives implemented behind `CONFIG_METHOD` (D4). |
 | D9 | Acceptance criterion on the three modularities | — | **`Q_stale ≤ Q_dyn`, not `Q_fixed ≤ Q_lagged ≤ Q_dyn`** | The plan asserted a full ordering. Only the first holds (0/6,215 violations); the fixed-vs-lagged ordering has no theorem behind it and fails on 23 % of days. Corrected, and the violation reported — see `PITFALLS.md` B7. |

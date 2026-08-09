@@ -1,0 +1,132 @@
+{
+  "n_windows": 6315,
+  "delta_t": 30,
+  "split_year": 2002,
+  "n_nonoverlapping": 211,
+  "n_bootstrap": 1000,
+  "inter_measure": {
+    "mean_abs_offdiag": 0.6065384974475858,
+    "max_abs_offdiag": 0.9551990685796244,
+    "n_components_for_90pct": 3,
+    "explained_variance_ratio": [
+      0.6902159821888493,
+      0.15137477290791815,
+      0.09253622722432443,
+      0.04395956350065758,
+      0.013113359539665217,
+      0.006474491698561809,
+      0.0018772742285969822,
+      0.0004483287114266581
+    ],
+    "n_measures": 8,
+    "n_days": 6315
+  },
+  "compression": {
+    "n_nodes": 360,
+    "community_cost_median": 54.0,
+    "community_cost_max": 12402.0,
+    "config_cost": 360.0,
+    "frac_days_cheaper": 0.6934283452098179,
+    "frac_days_cheaper_sharp_crisis": 0.3431952662721893,
+    "frac_days_cheaper_any_crisis": 0.5812053115423902,
+    "break_even_k": 25.374709300753377,
+    "k_median": 9.0,
+    "k_max": 156
+  },
+  "overlap_correction": {
+    "mean_rho_overlapping": 0.7829336313838097,
+    "mean_rho_nonoverlapping": 0.7773753869110824,
+    "mean_drop": 0.005558244472727159,
+    "max_drop": 0.16376430994024074,
+    "n_of_32_that_drop": 12,
+    "community_mean_rho": 0.7050299101141463,
+    "community_mean_rho_nonoverlapping": 0.6877884609537617,
+    "worst": [
+      {
+        "measure": "rich_club",
+        "model": "comm",
+        "era": "post",
+        "rho": 0.33200193492821933,
+        "rho_nonoverlapping": 0.1682376249879786,
+        "drop": 0.16376430994024074
+      },
+      {
+        "measure": "clique_number",
+        "model": "comm",
+        "era": "post",
+        "rho": 0.46889606693539937,
+        "rho_nonoverlapping": 0.3609803760585234,
+        "drop": 0.10791569087687597
+      },
+      {
+        "measure": "matching_index",
+        "model": "comm",
+        "era": "post",
+        "rho": 0.5181127698649804,
+        "rho_nonoverlapping": 0.4218398406267096,
+        "drop": 0.09627292923827085
+      },
+      {
+        "measure": "betweenness",
+        "model": "comm",
+        "era": "pre",
+        "rho": 0.6185153429695157,
+        "rho_nonoverlapping": 0.6981801150011466,
+        "drop": -0.07966477203163091
+      },
+      {
+        "measure": "transitivity",
+        "model": "comm",
+        "era": "post",
+        "rho": 0.7758118061905231,
+        "rho_nonoverlapping": 0.7107789924670266,
+        "drop": 0.06503281372349656
+      }
+    ]
+  },
+  "vs_paper": {
+    "n_cells": 32,
+    "rho_mae_vs_paper": 0.15543883741040737,
+    "rho_within_0_10": 0.59375,
+    "rho_within_0_20": 0.71875,
+    "sign_agreement": 0.96875,
+    "tolerance": 0.3,
+    "n_not_reproduced": 4,
+    "not_reproduced": [
+      {
+        "measure": "assortativity",
+        "model": "conf",
+        "era": "pre",
+        "ours": 0.5732879099226905,
+        "paper": -0.47,
+        "delta": 1.0432879099226904
+      },
+      {
+        "measure": "modularity",
+        "model": "conf",
+        "era": "pre",
+        "ours": 0.5551979304969754,
+        "paper": 0.07,
+        "delta": 0.4851979304969754
+      },
+      {
+        "measure": "assortativity",
+        "model": "comm",
+        "era": "pre",
+        "ours": 0.28313685799619565,
+        "paper": 0.76,
+        "delta": -0.47686314200380436
+      },
+      {
+        "measure": "betweenness",
+        "model": "comm",
+        "era": "pre",
+        "ours": 0.6185153429695157,
+        "paper": 0.93,
+        "delta": -0.31148465703048434
+      }
+    ],
+    "conf_mean_rho_ours": 0.8608373526534729,
+    "conf_mean_rho_paper": 0.7206250000000001
+  }
+}

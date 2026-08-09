@@ -24,8 +24,14 @@ from data.universe import to_yahoo_symbol  # noqa: E402
 from net.communities import (MixingStore, community_sizes,  # noqa: E402
                              louvain_partitions, mixing_matrix, modularity,
                              modularity_from_mixing, relabel_by_size)
+from net.measures import (adjacency, matching_index,  # noqa: E402
+                          normalized_rich_club, path_lengths, rich_club_curve)
 from net.nullmodels import (block_probabilities, community_graph,  # noqa: E402
                             configuration_graph)
+from utils.scoring import (block_bootstrap_ci, chi_square,  # noqa: E402
+                           compression_cost, effective_sample_size,
+                           inter_measure_correlation, nonoverlapping_slice,
+                           normalized_mse, pearson)
 from net.construct import (build_network_sequence, decode_pairs,  # noqa: E402
                            log_returns, mean_correlation_series, n_windows,
                            target_edge_count, threshold_window,
@@ -451,6 +457,149 @@ def test_stub_matching_loses_edges_which_is_why_it_is_not_the_default():
 def test_configuration_graph_rejects_unknown_method():
     with pytest.raises(ValueError):
         configuration_graph(_two_cliques(10), seed=0, method="vl")
+
+
+# ── Phase 5: the eight measures ────────────────────────────────────────────
+
+def test_rich_club_curve_matches_brute_force():
+    """The prefix-scan shortcut must equal the naive submatrix computation;
+    it is the only reason phi(k) is affordable on 132,615 graphs."""
+    import igraph as ig
+    for seed in range(3):
+        g = ig.Graph.Erdos_Renyi(n=50, p=0.15)
+        A = adjacency(g)
+        phi = rich_club_curve(A)
+        d = A.sum(axis=1)
+        for k in range(int(d.max()) + 1):
+            sel = d > k
+            p = int(sel.sum())
+            ref = A[np.ix_(sel, sel)].sum() / (p * (p - 1)) if p > 1 else np.nan
+            assert (np.isnan(phi[k]) and np.isnan(ref)) or abs(phi[k] - ref) < 1e-12
+
+
+def test_path_length_conventions_differ_on_a_disconnected_graph():
+    """Audit E6 made concrete. A triangle, a separate edge, and an isolate:
+    the largest-component reading sees a perfect little world, the harmonic
+    reading sees most of the graph unreachable."""
+    import igraph as ig
+    g = ig.Graph(n=7, edges=[(0, 1), (1, 2), (0, 2), (3, 4)])
+    asp_lcc, harmonic, efficiency, lcc_frac = path_lengths(g)
+    assert np.isclose(asp_lcc, 1.0)              # triangle: every pair adjacent
+    assert np.isclose(efficiency, 8.0 / 42.0)    # 8 ordered reachable pairs
+    assert np.isclose(harmonic, 1.0 / efficiency)
+    assert np.isclose(lcc_frac, 3 / 7)
+    assert harmonic > asp_lcc                    # unreachable pairs cost the mean
+
+
+def test_matching_index_is_one_for_identical_neighbourhoods():
+    import igraph as ig
+    g = ig.Graph(n=4, edges=[(0, 2), (0, 3), (1, 2), (1, 3)])
+    A = adjacency(g)
+    # Nodes 0 and 1 share both neighbours and nothing else, so mu_01 = 1.
+    Af = A.astype(float)
+    inter = Af @ Af
+    d = Af.sum(axis=1)
+    union = d[:, None] + d[None, :] - inter - 2 * Af
+    assert np.isclose(inter[0, 1] / union[0, 1], 1.0)
+    assert 0.0 <= matching_index(A) <= 1.0
+
+
+def test_adjacency_is_symmetric_with_no_self_loops():
+    import igraph as ig
+    g = ig.Graph.Erdos_Renyi(n=30, p=0.2)
+    A = adjacency(g)
+    assert np.array_equal(A, A.T)
+    assert not np.diag(A).any()
+    assert A.sum() == 2 * g.ecount()
+
+
+def test_normalized_rich_club_is_one_against_itself():
+    phi = np.array([0.1, 0.2, np.nan, 0.4])
+    assert np.isclose(normalized_rich_club(phi, phi), 1.0)
+
+
+# ── Phase 6: scoring ───────────────────────────────────────────────────────
+
+def test_chi_square_and_normalized_mse():
+    real = np.array([1.0, 2.0, 3.0, 4.0])
+    model = real + 1.0
+    assert np.isclose(chi_square(real, model), 1.0)
+    # NMSE divides by the variance of the real series, making measures with
+    # wildly different units comparable (audit E2).
+    assert np.isclose(normalized_mse(real, model), 1.0 / np.var(real))
+
+
+def test_nonoverlapping_slice_picks_windows_that_share_no_data():
+    idx = nonoverlapping_slice(100, 30)
+    assert list(idx) == [0, 30, 60, 90]
+    assert effective_sample_size(6315, 30) == 211
+
+
+def test_overlap_inflates_correlation_between_independent_series():
+    """The mechanism behind audit E1, demonstrated on data with a known answer.
+
+    Two INDEPENDENT random walks, each passed through a 30-point moving window
+    exactly as the paper's measures are. The overlapping correlation is large
+    in magnitude far more often than it should be; subsampling every 30th point
+    removes most of the inflation. If this test ever fails, the correction in
+    Phase 6 is not doing what it claims.
+    """
+    rng = np.random.default_rng(0)
+    over, under = [], []
+    for _ in range(60):
+        a = np.cumsum(rng.normal(size=1200))
+        b = np.cumsum(rng.normal(size=1200))
+        sa = np.convolve(a, np.ones(30) / 30, mode="valid")
+        sb = np.convolve(b, np.ones(30) / 30, mode="valid")
+        over.append(abs(pearson(sa, sb)))
+        idx = nonoverlapping_slice(len(sa), 30)
+        under.append(abs(pearson(sa[idx], sb[idx])))
+    # Both are spurious -- these series are independent by construction -- but
+    # the overlapping estimate is the more confident one, and that confidence
+    # is what the paper's rho values inherit.
+    assert np.mean(over) > 0.3
+    assert np.mean(over) > np.mean(under)
+
+
+def test_block_bootstrap_brackets_the_point_estimate():
+    rng = np.random.default_rng(2)
+    x = np.cumsum(rng.normal(size=900))
+    y = x + rng.normal(scale=0.5, size=900)
+    point = pearson(x, y)
+    mean, lo, hi = block_bootstrap_ci(x, y, block=30, n_boot=300, seed=1)
+    assert lo < point < hi
+    assert lo < mean < hi
+
+
+def test_block_bootstrap_refuses_series_too_short_for_its_blocks():
+    x = np.arange(50.0)
+    assert np.isnan(block_bootstrap_ci(x, x, block=30, n_boot=50)[1])
+
+
+def test_compression_cost_breaks_even_where_the_arithmetic_says():
+    """k + k(k+1)/2 < N.
+
+    At N = 360 the last cheaper k is 25: k = 26 costs 26 + 351 = 377 > 360.
+    The audit's "equal at k = 26" counts only the k(k+1)/2 entries of Pi; we
+    also count the k community sizes, which Eq. 2 needs to generate anything.
+    """
+    k = np.array([5, 25, 26, 156])
+    cost, base, cheaper = compression_cost(k, 360)
+    assert base == 360.0
+    assert list(cheaper) == [True, True, False, False]
+    assert cost[0] == 5 + 15
+    assert cost[2] == 26 + 26 * 27 / 2
+
+
+def test_inter_measure_correlation_finds_independence_when_it_exists():
+    rng = np.random.default_rng(4)
+    series = {f"m{i}": rng.normal(size=800) for i in range(8)}
+    names, C, summary = inter_measure_correlation(series)
+    assert len(names) == 8 and C.shape == (8, 8)
+    assert np.allclose(np.diag(C), 1.0)
+    assert summary["mean_abs_offdiag"] < 0.1
+    # Eight independent measures need nearly all eight components.
+    assert summary["n_components_for_90pct"] >= 7
 
 
 if __name__ == "__main__":

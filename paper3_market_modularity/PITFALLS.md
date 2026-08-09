@@ -31,22 +31,22 @@
 | B5 | Isolated nodes each become their own community | THINK | 3, 6 | **confirmed (P3)**, compression test P6 |
 | B6 | Modularity noise floor never drawn | EASY | 4 | **addressed (P4)** |
 | B7 | *(new, P3)* t_Δ = 100 samples the plateau, not the decay | — | 3 | **new finding** |
-| C1 | Does modularity rise or fall in a crisis? | THINK | 8c | pending |
+| C1 | Does modularity rise or fall in a crisis? | THINK | 8c | **settled (P8)** |
 | C2 | Crisis periods ill-defined | THINK | 0 | **addressed** |
-| D1 | Compression claim unverified | EASY | 6 | pending |
+| D1 | Compression claim unverified | EASY | 6 | **inverts in crises (P6)** |
 | D2 | Coin-flip generation makes edge counts random | EASY | 4 | **addressed (P4)** |
 | D3 | One realization per day, no error bars | EASY | 4–5 | **addressed (P4)**, P5 pending |
-| D4 | Rich-club reported raw, not normalized | EASY | 5 | pending |
+| D4 | Rich-club reported raw, not normalized | EASY | 5 | **addressed (P5)** |
 | E1 | **Window overlap inflates every ρ — the big one** | EASY/THINK | 6 | pending |
-| E2 | ⟨χ²⟩ unnormalized, not comparable across measures | EASY | 6 | pending |
+| E2 | ⟨χ²⟩ unnormalized, not comparable across measures | EASY | 6 | **addressed** |
 | E3 | ⟨χ²⟩ is not a chi-squared statistic | EASY | 6 | pending |
-| E4 | No significance testing at any point | EASY | 6 | pending |
-| E5 | The eight measures are not eight independent facts | EASY | 6 | pending |
-| E6 | Disconnection handling unstated | EASY | 5 | pending |
-| E7 | PCA1 asserted to be time, not shown | EASY | 7 | pending |
-| E8 | Fig. 7 shows separation, described as agreement | THINK | 7 | pending |
+| E4 | No significance testing at any point | EASY | 6 | **addressed** |
+| E5 | The eight measures are not eight independent facts | EASY | 6 | **addressed** |
+| E6 | Disconnection handling unstated | EASY | 5 | **addressed** |
+| E7 | PCA1 asserted to be time, not shown | EASY | 7 | **addressed** |
+| E8 | Fig. 7 shows separation, described as agreement | THINK | 7 | **addressed** |
 | E9 | The 2002 split was chosen from the data | THINK | 6 | pending |
-| E10 | "Crisis detection evaluation" never performed | THINK | 8b | pending |
+| E10 | "Crisis detection evaluation" never performed | THINK | 8b | **addressed** |
 | E11 | No mechanism proposed for the 2002 break | THINK | — | **UNTESTED** |
 
 \* A10 is labelled EASY but critical: the ambiguity is 30 days, the same size as the effects being claimed.
@@ -295,3 +295,81 @@ There is a labelled box in the methodology flowchart for it, and the paper conta
 Honest admission, but it means the central claim really only holds for the first 15 of 25 years. Untested candidates: decimalization (2001), ETF/index-fund growth, algorithmic trading.
 
 **UNTESTED — out of scope.** Testing any of these needs data the replication does not gather.
+
+
+---
+
+## Results, phases 5–9
+
+Added after the run. Numbers read from `results/phase*.json`; nothing retyped.
+
+### E1 — the overlap correction. **The audit's central hypothesis is not supported.**
+The prediction was that recomputing every ρ on non-overlapping windows would collapse the paper's evidence — "if 0.99 falls to 0.7 the headline needs rewriting."
+
+It does not fall. Across all 32 cells the mean ρ moves **0.783 → 0.777**, a change of +0.006. Only 12 of 32 cells drop at all, and the worst drop is 0.164 (rich club, community model, post-2002).
+
+The mechanism in the audit is real — a unit test in `tests/test_paper3.py` shows two *independent* random walks passed through 30-day windows correlating at |ρ| > 0.3 on overlapping points. But overlap inflates correlations that are **spurious**, and these are not: the community model genuinely tracks the real series. Overlap cannot add much to a correlation already at 0.98. Effective sample size drops from 6,315 to 211, so the *confidence intervals* should widen — but the point estimates stand.
+
+This is the single largest thing this replication expected to find and did not.
+
+### E2 — normalized MSE. The rescaling changes the reading completely.
+Dividing each χ² by the variance of the real series (1.0 = no better than predicting the mean):
+
+| measure | community NMSE | configuration NMSE |
+|---|---|---|
+| modularity | **0.034** | 8.508 |
+| path length | 0.371 | **0.298** |
+| assortativity | 1.138 | 8.897 |
+| transitivity | 9.668 | **3.218** |
+| betweenness | 3.168 | **1.703** |
+| clique number | 5.360 | **3.014** |
+| rich club | 14.340 | **1.457** |
+| matching index | 4.430 | **0.561** |
+
+**The community model beats the degree sequence on exactly one measure: modularity — the one quantity Π directly encodes.** On six of the remaining seven the degree sequence is better, and on five of them the community model scores worse than 1.0, i.e. worse than predicting the real series' own mean. The paper's raw χ² table hides this because its units differ by five orders of magnitude.
+
+### E4 — block bootstrap. 95 % CIs on all 48 cells, block length = Δt = 30.
+
+### E5 — the eight measures are about three.
+Mean |ρ| between measures **0.607** (max 0.955); **3 of 8** principal components carry 90 % of the variance. Eight agreements are not eight pieces of evidence.
+
+### E6 — the disconnection convention matters more than expected.
+The network is fragmented on **3,973 of 6,315 days**, worst on 1987-10-19 when the largest component holds only 57.8% of stocks. The two conventions for average path length correlate just **+0.391** — they are substantially different series, and the paper does not say which it used.
+
+### E7/E8 — PCA.
+PC1 explains 52.7%, PC1+PC2 80.1%. corr(PC1, date) = **+0.439** — a moderate relationship, not the "PCA1 is essentially time" the paper asserts.
+
+The separation the paper describes as agreement: a logistic classifier tells the three families apart **98.6%** of the time against 33.3% chance, and real from community model **97.8%** against 50 %. A null model genuinely indistinguishable from the real networks would sit at chance.
+
+### E10 — the detector, built and scored.
+Against the Phase-0 pre-registered windows (base rate 2.7%):
+
+| signal | ROC-AUC |
+|---|---|
+| mean correlation | 0.807 |
+| **τ(t)** | **0.807** |
+| isolated nodes | 0.760 |
+| dynamical modularity | 0.538 |
+
+**τ(t) — the quantity fixed-density thresholding throws away — detects crises far better than modularity, which is barely above chance at 0.538.** The paper builds its entire crisis narrative on the weakest of the four signals its own pipeline produces.
+
+### C1 — rise or fall: neither.
+Averaging over all 17 pre-registered onsets, in units of each event's pre-window sd: modularity at onset **-0.015** (nothing happens on the day), over the following 60 days **-0.495**. The abstract's "crises destroy structure" is directionally right but slow; the Fig. 4 text's "increase of modularity around the crisis" is not supported.
+
+### D1/B5 — the compression claim inverts exactly where the story lives.
+Community summary `k + k(k+1)/2` vs the degree sequence's N = 360: cheaper on **69.3%** of all days but only **34.3%** of sharp-crisis days. Break-even is k = 25.4; observed k reaches 156. On the days the paper is about, describing the market by its communities costs *more* than listing every stock's degree.
+
+### B1/B2 — Louvain stability.
+NMI between seeds on the same day **0.543**; between consecutive days at fixed seed **0.463**. Two runs on identical data agree only +0.079 more than runs on different days.
+
+### Not reproduced — 4 of 32 cells
+| measure | model | era | ours | paper | Δ |
+|---|---|---|---|---|---|
+| assortativity | conf | pre | +0.573 | -0.470 | +1.043 |
+| modularity | conf | pre | +0.555 | +0.070 | +0.485 |
+| assortativity | comm | pre | +0.283 | +0.760 | -0.477 |
+| betweenness | comm | pre | +0.619 | +0.930 | -0.311 |
+
+Concentrated in the configuration model, which in our hands tracks the real networks far more closely than in the paper's — mean ρ **0.861** vs **0.721** across all 16 configuration cells, and higher on every measure. Two explanations were tested on a 500-day pre-2002 sample and **both ruled out**: rewiring at 5× and 50× the edge count gives identical results (ρ 0.510 vs 0.512, edge overlap 26.4 % both), and classical stub matching gives ρ +0.443 / +0.418 — closer to ours than to the paper's +0.07 / −0.47.
+
+This matters because the configuration model is the paper's **yardstick**. The community model looks impressive largely in proportion to how badly the degree null performs, and we cannot reproduce the degree null performing that badly.

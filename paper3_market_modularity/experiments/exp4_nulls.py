@@ -53,6 +53,7 @@ PARTITIONS_NPY = os.path.join(ROOT, "data", "partitions.npy")
 MIXING_NPZ = os.path.join(ROOT, "data", "mixing.npz")
 COMM_SERIES = os.path.join(RESULTS, "series", "communities.parquet")
 SERIES_PARQUET = os.path.join(RESULTS, "series", "nulls.parquet")
+CHUNK_CACHE = os.path.join(RESULTS, "_chunks_nulls")
 
 # Days sampled for the stub-matching comparison. The alternative reading is
 # documented, not adopted, so it is priced accordingly.
@@ -128,7 +129,8 @@ def run(force: bool = False, verbose: bool = True, n_workers: int = None) -> dic
                          initializer=_init,
                          initargs=(EDGES_NPY, PARTITIONS_NPY, MIXING_NPZ, n_nodes),
                          n_workers=n_workers, chunk_size=64,
-                         verbose=verbose, label="nulls")
+                         verbose=verbose, label="nulls",
+                         cache_dir=CHUNK_CACHE)
     q_comm = stack(chunks, "q_comm")
     q_comm_planted = stack(chunks, "q_comm_planted")
     q_conf = stack(chunks, "q_conf")

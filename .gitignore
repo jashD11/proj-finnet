@@ -21,3 +21,6 @@ paper3_market_modularity/data/edges.npy
 # paper 3: Phase 3 derived artifacts (rebuilt by experiments/exp3_communities.py)
 paper3_market_modularity/data/partitions.npy
 paper3_market_modularity/data/mixing.npz
+
+# paper 3: resumable per-chunk caches (Phases 4-5), rebuilt on demand
+paper3_market_modularity/results/_chunks_*/
