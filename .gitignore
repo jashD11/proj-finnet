@@ -7,3 +7,8 @@ __pycache__/
 # Ignore verbose working logs, but track source-of-truth docs (README, CLAUDE.md)
 dev_log.md
 PIPELINE.md
+
+# paper 3: the 22 MB ragged download is a rebuildable intermediate
+# (data/fetch_data.py). panel_prices.parquet IS tracked — it is the analysis
+# input, and pinning it keeps results reproducible when Yahoo revises history.
+paper3_market_modularity/data/raw_closes.parquet

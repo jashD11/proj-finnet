@@ -1,6 +1,6 @@
 # Financial Networks Project
 
-From-scratch replications of two papers on learning graph/network structure from multivariate
+From-scratch replications of three papers on learning graph/network structure from multivariate
 financial and time-series data. Each paper lives in its own self-contained folder with its own
 solver, experiments, tests, and a single results notebook.
 
@@ -12,8 +12,9 @@ protocol or data generation are recorded rather than absorbed into the headline 
 |--------|-------|--------|----------|
 | [`paper1_gmrf_laplacian/`](paper1_gmrf_laplacian/) | Cardoso & Palomar (2020), *Learning Undirected Graphs in Financial Markets* (`docs/2005.09958v4.pdf`) | GMRF graph-Laplacian (precision) estimation for clustering + a trading signal | `replication_notebook.ipynb` |
 | [`paper2_ticc/`](paper2_ticc/) | Hallac, Vare, Boyd & Leskovec (KDD 2017), *Toeplitz Inverse Covariance-Based Clustering of Multivariate Time Series Data* (`docs/1706.03161v2.pdf`) | Subsequence clustering via block-Toeplitz inverse-covariance MRFs + dynamic-programming segmentation | `replication_notebook.ipynb` |
+| [`paper3_market_modularity/`](paper3_market_modularity/) | Silva, Comin, Peron, Rodrigues, Ye, Wilson, Hancock & Costa (2015), *Modular Dynamics of Financial Market Networks* (`docs/1501.05040v3.pdf`) | Sliding-window correlation networks, Louvain communities, and a stochastic-blockmodel null that compresses the market to its community mixing matrix | `replication_notebook.ipynb` |
 
-Both paper PDFs are in [`docs/`](docs/).
+All three paper PDFs are in [`docs/`](docs/).
 
 ## Setup
 
@@ -65,5 +66,36 @@ cd paper2_ticc
 python -m pytest tests/
 python experiments/exp1_table1_f1.py       # Table 1
 python experiments/exp3_fig3_samples.py    # → figures/fig3_samples.png   (etc.)
+jupyter notebook replication_notebook.ipynb
+```
+
+## Paper 3 — Modular dynamics of financial market networks
+
+Builds a daily sequence of stock-correlation networks over 25 years, detects communities each day
+with Louvain, then discards everything except the community sizes and the inter-community mixing
+matrix and regenerates a random network from that summary alone. The claim is that this compressed
+description reproduces most of the real network's topology, and that during crises the market
+leaves a well-defined community structure for a much more uniform one.
+
+The replication is organised around a 26-item methodological audit of the paper
+([`PITFALLS.md`](paper3_market_modularity/PITFALLS.md)) as well as the reproduction itself. The
+highest-value item: every correlation the paper reports is computed on 30-day sliding windows that
+share 29/30 of their data, so ~200 effectively independent points are presented as 5,978. That
+correction, and the crisis-detection evaluation the paper's own flowchart promises but never
+performs, are the parts worth reading.
+
+**Replication status — Phase 0 of 9 complete** (universe and price panel). N = 377 NYSE stocks ×
+6,345 trading days, 1986-01-02 → 2011-02-28, against the paper's 348 × 6,008. Nothing is
+reproduced yet; see [`paper3_market_modularity/CLAUDE.md`](paper3_market_modularity/CLAUDE.md) §8
+for the phase checklist and §9 for known deviations.
+
+Requires `python-igraph` (Louvain, exact clique number, betweenness) and, on this machine, the
+`/opt/anaconda3` interpreter rather than `.venv`, which lacks `yfinance` and `pyarrow`.
+
+```bash
+cd paper3_market_modularity
+python -m pytest tests/
+python data/fetch_data.py                  # one-time price download (~10 min)
+python experiments/exp1_data.py            # Phase 0 → data/UNIVERSE.md
 jupyter notebook replication_notebook.ipynb
 ```
