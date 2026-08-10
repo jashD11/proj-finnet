@@ -1,0 +1,76 @@
+{
+  "n_windows": 6315,
+  "n_nodes": 360,
+  "split_year": 2002,
+  "n_replicates": 1,
+  "seed": 42,
+  "elapsed_sec": 163.9,
+  "rho": {
+    "mae_vs_paper": 0.13991305315117764,
+    "within_0_10": 0.5625,
+    "within_0_20": 0.8125,
+    "within_0_30": 0.875,
+    "sign_agreement": 0.96875
+  },
+  "chi2": {
+    "median_abs_log10_ratio": 0.13605052936315087,
+    "within_one_order": 1.0
+  },
+  "head_to_head": {
+    "ours_community_wins_chi2": 4,
+    "paper_community_wins_chi2": 8,
+    "ours_community_wins_rho": 4,
+    "paper_community_wins_rho": 9,
+    "of": 16
+  },
+  "worst_cells": [
+    {
+      "measure": "assortativity",
+      "model": "conf",
+      "era": "pre",
+      "ours": 0.5614208076558505,
+      "paper": -0.47,
+      "delta": 1.0314208076558504
+    },
+    {
+      "measure": "assortativity",
+      "model": "comm",
+      "era": "pre",
+      "ours": 0.2825008697413403,
+      "paper": 0.76,
+      "delta": -0.4774991302586597
+    },
+    {
+      "measure": "modularity",
+      "model": "conf",
+      "era": "pre",
+      "ours": 0.5403296768095576,
+      "paper": 0.07,
+      "delta": 0.47032967680955756
+    },
+    {
+      "measure": "betweenness",
+      "model": "comm",
+      "era": "pre",
+      "ours": 0.6112445624236991,
+      "paper": 0.93,
+      "delta": -0.318755437576301
+    },
+    {
+      "measure": "rich_club",
+      "model": "comm",
+      "era": "pre",
+      "ours": 0.5819175006348087,
+      "paper": 0.86,
+      "delta": -0.27808249936519125
+    },
+    {
+      "measure": "path_length",
+      "model": "comm",
+      "era": "pre",
+      "ours": 0.6892600271370882,
+      "paper": 0.89,
+      "delta": -0.2007399728629118
+    }
+  ]
+}
