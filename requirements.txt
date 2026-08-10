@@ -8,4 +8,6 @@ scikit-learn>=1.3
 tslearn>=0.6      # paper 2 (TICC): DTW clustering baselines
 python-igraph>=0.11  # paper 3 (Silva): Louvain, exact clique number, degree-sequence rewiring
 pyarrow>=14       # paper 3 (Silva): parquet price panel and measure series
+pypdfium2>=4      # paper 3 (Silva): crops the paper's own figures out of the PDF (docs/extract_paper_figs.py)
+pillow>=10        # paper 3 (Silva): quantises those crops
 pytest>=7.0       # test suites
