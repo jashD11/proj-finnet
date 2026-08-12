@@ -24,3 +24,11 @@ paper3_market_modularity/data/mixing.npz
 
 # paper 3: resumable per-chunk caches (Phases 4-5), rebuilt on demand
 paper3_market_modularity/results/_chunks_*/
+
+# reports: LaTeX build intermediates (the .tex and .pdf ARE tracked)
+reports/*.aux
+reports/*.log
+reports/*.out
+reports/*.toc
+reports/*.xdv
+reports/*.synctex.gz
