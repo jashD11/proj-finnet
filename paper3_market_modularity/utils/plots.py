@@ -1,0 +1,699 @@
+"""
+Every figure in the replication, as a reusable function.
+
+Phase 9's notebook calls these; it never recomputes anything. Each function
+takes already-computed arrays or a results dict and returns a matplotlib Figure,
+saving to figures/ when given a path.
+
+House rules, applied to every figure here:
+  - One y-axis per panel. The paper's own Fig. 4 overlays modularity and path
+    length on twin axes; we stack panels instead, because a dual-axis chart lets
+    the reader infer any correlation the axis scaling implies.
+  - Categorical colour is assigned by entity and never by rank: inferred
+    networks are always blue, the community null always orange, the
+    configuration null always aqua, in every figure in the project.
+  - Crisis bands are neutral grey, never a categorical hue - they are context,
+    not a series.
+  - Recessive grid and spines; series are the only saturated ink.
+  - Committed to a light surface: these are static PNGs embedded in a notebook
+    and compared against the paper's own figures.
+"""
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+# ── Palette ────────────────────────────────────────────────────────────────
+# Slots 1-3 of the validated categorical palette, used unchanged. This trio is
+# documented as clearing the all-pairs floors in both modes (CVD dE 9.2,
+# normal-vision dE 24.0 on a light surface), which matters because these series
+# appear together as scatter points in Figs. 6/7, not only as lines.
+INFERRED = "#2a78d6"      # slot 1, blue   - the real networks
+COMMUNITY = "#eb6834"     # slot 2, orange - community (blockmodel) null
+CONFIG = "#1baf7a"        # slot 3, aqua   - configuration (degree) null
+ACCENT = "#4a3aa7"        # slot 7, violet - a secondary quantity (tau, rho-bar)
+
+SURFACE = "#fcfcfb"
+INK = "#0b0b0b"
+INK_SECONDARY = "#52514e"
+GRID = "#dcdbd6"
+CRISIS_SHADE = "#9a9a94"
+
+FAMILY_COLOR = {"inferred": INFERRED, "community": COMMUNITY, "configuration": CONFIG}
+
+plt.rcParams.update({
+    "figure.facecolor": SURFACE,
+    "axes.facecolor": SURFACE,
+    "savefig.facecolor": SURFACE,
+    "axes.edgecolor": GRID,
+    "axes.labelcolor": INK,
+    "axes.titlesize": 11,
+    "axes.titleweight": "bold",
+    "axes.labelsize": 9.5,
+    "text.color": INK,
+    "xtick.color": INK_SECONDARY,
+    "ytick.color": INK_SECONDARY,
+    "xtick.labelsize": 8.5,
+    "ytick.labelsize": 8.5,
+    "legend.fontsize": 8.5,
+    "legend.frameon": False,
+    "grid.color": GRID,
+    "grid.linewidth": 0.6,
+    "lines.linewidth": 1.0,
+    "figure.dpi": 130,
+})
+
+DPI = 130
+
+
+def _style(ax, title=None, ylabel=None, xlabel=None):
+    if title:
+        ax.set_title(title, loc="left", color=INK)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    ax.grid(True, axis="y", alpha=0.7)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    return ax
+
+
+def shade_crises(ax, tiers=("sharp", "diffuse"), label=True):
+    """Draw the pre-registered crisis bands as neutral context."""
+    from utils.crisis_dates import crisis_frame
+    df = crisis_frame()
+    df = df[df["tier"].isin(tiers)]
+    for k, (_, r) in enumerate(df.iterrows()):
+        ax.axvspan(r["start"], r["end"], color=CRISIS_SHADE, alpha=0.18, lw=0,
+                   label="crisis period (pre-registered)" if (label and k == 0) else None)
+
+
+def _stamp_label(stamp: str) -> str:
+    """X-axis label naming the window timestamp convention in force (audit A10)."""
+    return {
+        "t1": "window (stamped at its first day, t₁)",
+        "midpoint": "window (stamped at its midpoint)",
+        "t2": "window (stamped at its last day, t₂)",
+    }.get(stamp, "window")
+
+
+def _finish(fig, save):
+    fig.tight_layout()
+    if save:
+        fig.savefig(save, dpi=DPI, bbox_inches="tight")
+        print(f"[figure] {save}")
+    return fig
+
+
+# ── Phase 1 ────────────────────────────────────────────────────────────────
+
+def plot_return_diagnostics(returns, per_ticker_std, dates, rho_bar,
+                            std_band=(0.01, 0.04), stamp="t2", save=None):
+    """Three-panel Phase 1 validation figure."""
+    fig, axes = plt.subplots(3, 1, figsize=(9.5, 9.0))
+
+    # A: the return distribution against a Gaussian of the same variance.
+    ax = axes[0]
+    flat = returns.ravel()
+    sd = flat.std()
+    bins = np.linspace(-0.25, 0.25, 301)
+    # Outline, not a filled block: on a log density axis a filled histogram
+    # floods the panel and hides the tails, which are the entire point here.
+    ax.hist(flat, bins=bins, color=INFERRED, histtype="step", lw=1.2,
+            density=True, label="observed log returns")
+    centres = 0.5 * (bins[1:] + bins[:-1])
+    gauss = np.exp(-0.5 * (centres / sd) ** 2) / (sd * np.sqrt(2 * np.pi))
+    ax.plot(centres, gauss, color=ACCENT, lw=1.6, ls="--",
+            label=f"Gaussian, same σ ({sd:.4f})")
+    ax.set_yscale("log")
+    ax.set_ylim(1e-3, None)
+    ax.legend(loc="upper right")
+    ax.annotate("tails sit orders of magnitude\nabove the Gaussian",
+                xy=(-0.19, 0.35), xytext=(-0.24, 0.02),
+                textcoords="data", fontsize=8.5, color=INK_SECONDARY,
+                arrowprops=dict(arrowstyle="->", color=INK_SECONDARY, lw=0.8))
+    _style(ax, "A · Daily log returns are fat-tailed, not Gaussian",
+           "density (log scale)", "log return")
+
+    # B: per-ticker volatility against the acceptance band.
+    ax = axes[1]
+    ax.hist(per_ticker_std, bins=60, color=INFERRED, alpha=0.85, lw=0)
+    ax.axvspan(*std_band, color=CRISIS_SHADE, alpha=0.18, lw=0)
+    med = float(np.median(per_ticker_std))
+    ax.axvline(med, color=ACCENT, lw=1.6)
+    ax.annotate(f"median {med:.4f}", xy=(med, ax.get_ylim()[1] * 0.85),
+                xytext=(6, 0), textcoords="offset points",
+                color=ACCENT, fontsize=8.5, va="top")
+    ax.annotate("expected band\n0.01–0.04", xy=(std_band[1], ax.get_ylim()[1] * 0.45),
+                xytext=(8, 0), textcoords="offset points",
+                color=INK_SECONDARY, fontsize=8.5, va="center")
+    _style(ax, "B · Per-ticker daily volatility", "tickers", "standard deviation of daily log return")
+
+    # C: the signal the paper's construction is about to throw away.
+    ax = axes[2]
+    shade_crises(ax)
+    ax.plot(dates, rho_bar, color=ACCENT, lw=0.8)
+    ax.legend(loc="upper left")
+    _style(ax, "C · Mean pairwise correlation per 30-day window — the signal fixed density discards",
+           "mean off-diagonal ρ", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+# ── Phase 2 ────────────────────────────────────────────────────────────────
+
+def plot_network_construction(dates, tau, n_isolated, n_below_neg_tau,
+                              rho_bar=None, stamp="t2", save=None):
+    """Four-panel Phase 2 figure: what fixed-density thresholding does."""
+    fig, axes = plt.subplots(4, 1, figsize=(9.5, 11.0), sharex=True)
+
+    ax = axes[0]
+    shade_crises(ax)
+    ax.plot(dates, tau, color=ACCENT, lw=0.8, label="τ(t)")
+    ax.legend(loc="upper left")
+    _style(ax, "A · The threshold τ(t) that holds edge density at 10 %",
+           "τ (correlation cutoff)")
+
+    ax = axes[1]
+    shade_crises(ax, label=False)
+    ax.plot(dates, n_isolated, color=INFERRED, lw=0.8)
+    _style(ax, "B · Isolated nodes (degree 0) — the Fig. 3B crisis signature",
+           "stocks with no edges")
+
+    ax = axes[2]
+    shade_crises(ax, label=False)
+    ax.plot(dates, n_below_neg_tau, color=COMMUNITY, lw=0.8)
+    _style(ax, "C · Pairs with ρ < −τ — strong anticorrelations the construction cannot see",
+           "invisible pairs")
+
+    ax = axes[3]
+    shade_crises(ax, label=False)
+    if rho_bar is not None:
+        ax.plot(dates, rho_bar, color=CONFIG, lw=0.8)
+    _style(ax, "D · Mean pairwise correlation, for comparison with τ(t)",
+           "mean off-diagonal ρ", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+# ── Phase 3 ────────────────────────────────────────────────────────────────
+
+# The three modularities are not three entities — they are one quantity at
+# three levels of partition staleness, so they take an ordinal ramp of the
+# single "inferred network" hue rather than three categorical slots. Fresh is
+# darkest. Steps 650/450/250 of the blue ramp; 250 is the documented ordinal
+# floor on a light surface (2.06:1), so the palest line still reads.
+STALENESS = ("#104281", "#2a78d6", "#86b6ef")   # dynamical / lagged / fixed
+
+
+def plot_modularity_overview(dates, q_dyn, k, seed_lo=None, seed_hi=None,
+                             stamp="t2", save=None):
+    """Fig. 4 companion: the modularity series with its Louvain noise band.
+
+    The band is ±1 sd across the ten Louvain seeds on each day. Drawing it is
+    the whole point: the paper reports a single Louvain run per day, and any
+    daily feature narrower than this band is an artifact of the algorithm.
+    """
+    fig, axes = plt.subplots(2, 1, figsize=(9.5, 6.4), sharex=True)
+
+    ax = axes[0]
+    shade_crises(ax)
+    if seed_lo is not None:
+        ax.fill_between(dates, seed_lo, seed_hi, color=INFERRED, alpha=0.35, lw=0,
+                        label="±1 sd across 10 Louvain seeds")
+    ax.plot(dates, q_dyn, color=STALENESS[0], lw=0.7, label="dynamical Q(t), seed 0")
+    ax.legend(loc="upper left", ncol=3)
+    _style(ax, "A · Dynamical modularity — with the Louvain seed spread it is usually read without",
+           "modularity Q")
+
+    ax = axes[1]
+    shade_crises(ax, label=False)
+    ax.plot(dates, k, color=ACCENT, lw=0.7)
+    _style(ax, "B · Number of communities k(t) — singletons make it spike when the network shatters",
+           "communities detected", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+def plot_three_modularities(dates, q_dyn, q_lagged, q_fixed, q_diff,
+                            lag=100, stamp="t2", save=None):
+    """Fig. 5: the same graphs scored with partitions of three different ages."""
+    fig, axes = plt.subplots(2, 1, figsize=(9.5, 6.8), sharex=True)
+
+    ax = axes[0]
+    shade_crises(ax)
+    for series, colour, label in (
+            (q_fixed, STALENESS[2], "fixed — C(0), first day's partition"),
+            (q_lagged, STALENESS[1], f"lagged — C(t − {lag})"),
+            (q_dyn, STALENESS[0], "dynamical — C(t), re-detected daily")):
+        ax.plot(dates, series, color=colour, lw=0.7, label=label)
+    ax.legend(loc="upper left", ncol=2)
+    _style(ax, "A · One modularity formula, three partition ages", "modularity Q")
+
+    ax = axes[1]
+    shade_crises(ax, label=False)
+    ax.plot(dates, q_diff, color=ACCENT, lw=0.7)
+    ax.axhline(0, color=INK_SECONDARY, lw=0.8, ls=":")
+    _style(ax, f"B · Q_dyn − Q_lagged — modularity that exists only because communities are allowed to move",
+           "Q gained by re-detecting", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+def plot_partition_decay(lags, q_by_lag, floor, q_real, q_noise, lag_marker=100,
+                         save=None):
+    """What a modularity number is worth: how fast it decays, and its floor.
+
+    The noise reference is drawn in neutral grey rather than a categorical hue,
+    following the same rule as the crisis bands: it is context to read the real
+    series against, not a fourth entity competing with it.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(9.8, 3.9))
+
+    ax = axes[0]
+    lags = np.asarray(lags, dtype=float)
+    ax.axhline(floor, color=CRISIS_SHADE, lw=1.2, ls="--",
+               label=f"random partition, same sizes ({floor:+.3f})")
+    ax.plot(lags, q_by_lag, color=INFERRED, lw=1.6, marker="o", ms=4,
+            label="Q(gₜ, C(t − L))")
+    ax.axvline(lag_marker, color=INK, lw=1.0, ls=":")
+    ax.annotate(f"the paper's t_Δ = {lag_marker}", xy=(lag_marker, q_by_lag[0] * 0.85),
+                xytext=(6, 0), textcoords="offset points", fontsize=8.5, color=INK)
+    ax.set_xscale("symlog", linthresh=1)
+    ax.set_xlim(0, lags.max() * 1.15)   # lag 0 exists; negative ticks do not
+    ax.legend(loc="lower left")
+    _style(ax, "A · Community structure has a half-life of days, not months",
+           "modularity Q", "partition age L (trading days, symlog)")
+
+    ax = axes[1]
+    bins = np.linspace(min(q_noise.min(), q_real.min()) - 0.01,
+                       max(q_noise.max(), q_real.max()) + 0.01, 70)
+    ax.hist(q_noise, bins=bins, color=CRISIS_SHADE, alpha=0.55, lw=0,
+            density=True, label="i.i.d. Gaussian returns (A4 reference)")
+    ax.hist(q_real, bins=bins, color=INFERRED, histtype="step", lw=1.4,
+            density=True, label="real market networks")
+    ax.legend(loc="upper right")
+    _style(ax, "B · The level of Q is what noise gives; only its spread is market",
+           "density", "dynamical modularity Q")
+    return _finish(fig, save)
+
+
+# ── Phase 4 ────────────────────────────────────────────────────────────────
+
+def plot_noise_floor(dates, q_real, q_comm, q_conf, conf_sd=None,
+                     paper_floor=0.10, stamp="t2", save=None):
+    """The figure the paper's Fig. 6(a1) implies but never labels with a number.
+
+    Three entities, so three categorical slots in their project-wide roles:
+    real networks blue, community null orange, configuration null aqua.
+    """
+    fig, ax = plt.subplots(figsize=(9.5, 4.4))
+    shade_crises(ax)
+    # The community null is drawn first and thicker, the real series thin on
+    # top: the two agree so closely that whichever is painted last erases the
+    # other, and that agreement is precisely the claim under test.
+    ax.plot(dates, q_comm, color=COMMUNITY, lw=1.8, alpha=0.85,
+            label="community null (Eq. 2), 10 replicates")
+    ax.plot(dates, q_real, color=INFERRED, lw=0.7, label="real market networks")
+    if conf_sd is not None:
+        ax.fill_between(dates, q_conf - conf_sd, q_conf + conf_sd,
+                        color=CONFIG, alpha=0.3, lw=0)
+    ax.plot(dates, q_conf, color=CONFIG, lw=0.9,
+            label="configuration null — the noise floor")
+    ax.axhline(paper_floor, color=INK_SECONDARY, lw=1.0, ls=":")
+    ax.annotate(f"the paper's drawn floor ≈ {paper_floor:.2f}",
+                xy=(dates[len(dates) // 12], paper_floor), xytext=(0, -13),
+                textcoords="offset points", fontsize=8.5, color=INK_SECONDARY)
+    ax.legend(loc="upper left", ncol=2)
+    _style(ax, "Modularity against the two nulls — everything below the aqua line is the degree sequence",
+           "modularity Q", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+def plot_null_validation(q_real, q_planted, edges_comm, real_edges, save=None):
+    """Two generator checks, as scatter and histogram rather than assertions."""
+    fig, axes = plt.subplots(1, 2, figsize=(9.8, 4.0))
+
+    ax = axes[0]
+    lim = (min(q_real.min(), q_planted.min()) - 0.01,
+           max(q_real.max(), q_planted.max()) + 0.01)
+    ax.plot(lim, lim, color=INK_SECONDARY, lw=1.0, ls=":", label="y = x")
+    ax.scatter(q_real, q_planted, s=3, color=COMMUNITY, alpha=0.25, lw=0)
+    ax.set_xlim(lim)
+    ax.set_ylim(lim)
+    ax.legend(loc="upper left")
+    _style(ax, "A · Eq. 2 preserves the modularity it was built from",
+           "Q of the generated network, planted partition", "Q of the real network")
+
+    ax = axes[1]
+    rel = 100.0 * (edges_comm / real_edges - 1.0)
+    ax.hist(rel, bins=60, color=COMMUNITY, alpha=0.85, lw=0)
+    ax.axvline(0, color=INK, lw=1.0, ls=":")
+    ax.annotate(f"mean {rel.mean():+.3f} %\nworst day {np.abs(rel).max():.2f} %",
+                xy=(0.97, 0.9), xycoords="axes fraction", ha="right",
+                fontsize=8.5, color=INK_SECONDARY)
+    _style(ax, "B · Independent coin flips only match the edge count in expectation (D2)",
+           "days", "generated edges vs real, %")
+    return _finish(fig, save)
+
+
+# ── Phase 5 ────────────────────────────────────────────────────────────────
+
+MEASURE_LABEL = {
+    "modularity": "modularity Q",
+    "path_length": "avg shortest path (harmonic)",
+    "assortativity": "degree assortativity",
+    "transitivity": "transitivity",
+    "betweenness": "avg betweenness",
+    "clique_number": "clique number ω",
+    "rich_club": "rich club ⟨φ(k)⟩",
+    "matching_index": "avg matching index",
+}
+
+
+def plot_measure_grid(s, measures, save=None):
+    """The paper's Figs. 6 and S3 in one grid: eight measures, three families.
+
+    The community null is drawn thicker and underneath, the real series thin on
+    top, because where the paper's claim holds the two coincide exactly and
+    whichever is painted last would erase the other.
+    """
+    n = len(measures)
+    fig, axes = plt.subplots((n + 1) // 2, 2, figsize=(11.5, 2.1 * n / 2 + 1.2),
+                            sharex=True)
+    axes = np.atleast_1d(axes).ravel()
+    for ax, m in zip(axes, measures):
+        shade_crises(ax, label=(m == measures[0]))
+        ax.plot(s.index, s[f"comm_{m}_mean"], color=COMMUNITY, lw=1.6, alpha=0.85,
+                label="community null (Eq. 2)" if m == measures[0] else None)
+        ax.plot(s.index, s[f"conf_{m}_mean"], color=CONFIG, lw=0.8,
+                label="configuration null" if m == measures[0] else None)
+        ax.plot(s.index, s[f"real_{m}"], color=INFERRED, lw=0.6,
+                label="real networks" if m == measures[0] else None)
+        _style(ax, MEASURE_LABEL.get(m, m), None)
+    for ax in axes[n:]:
+        ax.set_visible(False)
+    axes[0].legend(loc="upper left", ncol=2, fontsize=8)
+    fig.suptitle("The eight measures — real networks against both nulls",
+                 x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK)
+    return _finish(fig, save)
+
+
+def plot_disconnection(s, save=None):
+    """Audit E6: the two disconnection conventions, and when they part company."""
+    fig, axes = plt.subplots(3, 1, figsize=(9.5, 7.4), sharex=True)
+
+    ax = axes[0]
+    shade_crises(ax, label=False)
+    ax.plot(s.index, s["real_lcc_frac"], color=ACCENT, lw=0.7)
+    ax.axhline(1.0, color=INK_SECONDARY, lw=0.8, ls=":")
+    _style(ax, "A · Fraction of stocks in the largest connected component",
+           "share of N")
+
+    # Two conventions of the same quantity: an ordinal pair, not two entities.
+    for ax, base, alt, title in (
+            (axes[1], "real_path_length", "real_path_length_lcc",
+             "B · Average shortest path — harmonic (all pairs) vs largest component"),
+            (axes[2], "real_betweenness", "real_betweenness_lcc",
+             "C · Average betweenness — all vertices vs largest component")):
+        shade_crises(ax, label=False)
+        ax.plot(s.index, s[alt], color=STALENESS[2], lw=0.9,
+                label="largest component only")
+        ax.plot(s.index, s[base], color=STALENESS[0], lw=0.6,
+                label="all pairs / all vertices")
+        ax.legend(loc="upper left", ncol=2)
+        _style(ax, title, None)
+    axes[2].set_xlabel(_stamp_label("t2"))
+    return _finish(fig, save)
+
+
+# ── Phase 6 ────────────────────────────────────────────────────────────────
+
+#: Diverging pair for correlation heatmaps: blue (slot 1 hue) to red (slot 8),
+#: with the neutral gray midpoint the palette specifies. Correlation is
+#: polarity data, so it never gets a sequential ramp or a hue at zero.
+DIVERGING = ("#104281", "#f0efec", "#e34948")
+
+
+def _diverging_cmap():
+    from matplotlib.colors import LinearSegmentedColormap
+    return LinearSegmentedColormap.from_list("bwr_palette", DIVERGING)
+
+
+def plot_overlap_correction(table, save=None):
+    """Audit E1, the headline: what happens to every rho in Figs. 6 and S3 when
+    the correlation is recomputed on windows that share no data.
+
+    A dumbbell per cell -- filled dot is the paper's overlapping rho, hollow dot
+    is the corrected one, and the connector is the correction itself.
+    """
+    eras = [("pre", f"Before 2002"), ("post", "2002 onwards")]
+    fig, axes = plt.subplots(1, 2, figsize=(11.0, 5.6), sharex=True, sharey=True)
+    measures = list(dict.fromkeys(table["measure"]))
+    ypos = {m: i for i, m in enumerate(measures)}
+
+    for ax, (era, title) in zip(np.atleast_1d(axes), eras):
+        sub = table[table["era"] == era]
+        for model, colour, off in (("comm", COMMUNITY, +0.16),
+                                   ("conf", CONFIG, -0.16)):
+            d = sub[sub["model"] == model]
+            y = np.array([ypos[m] for m in d["measure"]]) + off
+            ax.hlines(y, d["rho_nonoverlapping"], d["rho"], color=colour, lw=1.6,
+                      alpha=0.7)
+            ax.scatter(d["rho"], y, s=34, color=colour, lw=0, zorder=3,
+                       label="community null" if model == "comm" and era == "pre"
+                       else ("configuration null" if model == "conf" and era == "pre"
+                             else None))
+            ax.scatter(d["rho_nonoverlapping"], y, s=34, facecolors=SURFACE,
+                       edgecolors=colour, lw=1.4, zorder=3)
+        ax.axvline(0, color=INK_SECONDARY, lw=0.8, ls=":")
+        ax.set_yticks(range(len(measures)))
+        ax.set_yticklabels([MEASURE_LABEL.get(m, m) for m in measures])
+        # Extra headroom at the bottom so the legend never lands on a dumbbell.
+        ax.set_ylim(-1.5, len(measures) - 0.4)
+        _style(ax, title, None, "Pearson ρ between real and generated series")
+        ax.grid(True, axis="x", alpha=0.7)
+    axes[0].legend(loc="lower left", ncol=2)
+    fig.suptitle("E1 — every correlation in Figs. 6 and S3, corrected for window overlap",
+                 x=0.01, y=0.995, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.text(0.01, 0.945,
+             "filled = as the paper computes it (overlapping windows)     "
+             "hollow = recomputed on windows sharing no data",
+             fontsize=8.5, color=INK_SECONDARY, ha="left")
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    if save:
+        fig.savefig(save, dpi=DPI, bbox_inches="tight")
+        print(f"[figure] {save}")
+    return fig
+
+
+def plot_inter_measure(C, save=None):
+    """Audit E5: the eight 'independent' measurements, correlated with each other."""
+    names = list(C.index)
+    M = C.to_numpy()
+    fig, ax = plt.subplots(figsize=(6.6, 5.6))
+    im = ax.imshow(M, cmap=_diverging_cmap(), vmin=-1, vmax=1)
+    ax.set_xticks(range(len(names)))
+    ax.set_xticklabels([MEASURE_LABEL.get(n, n) for n in names], rotation=40,
+                       ha="right")
+    ax.set_yticks(range(len(names)))
+    ax.set_yticklabels([MEASURE_LABEL.get(n, n) for n in names])
+    for i in range(len(names)):
+        for j in range(len(names)):
+            ax.text(j, i, f"{M[i, j]:.2f}", ha="center", va="center", fontsize=7.5,
+                    color=INK if abs(M[i, j]) < 0.6 else SURFACE)
+    ax.grid(False)
+    for side in ("top", "right", "left", "bottom"):
+        ax.spines[side].set_visible(False)
+    fig.colorbar(im, ax=ax, shrink=0.8, label="Pearson ρ")
+    ax.set_title("Inter-measure correlation on the real networks",
+                 loc="left", color=INK)
+    return _finish(fig, save)
+
+
+def plot_compression(dates, k, d1, stamp="t2", save=None):
+    """Audit D1: the compression arithmetic the paper never does."""
+    cost = k + k * (k + 1) / 2.0
+    fig, ax = plt.subplots(figsize=(9.5, 4.2))
+    shade_crises(ax)
+    ax.plot(dates, cost, color=COMMUNITY, lw=0.7,
+            label="community summary:  k + k(k+1)/2")
+    ax.axhline(d1["config_cost"], color=CONFIG, lw=1.4,
+               label=f"degree sequence:  N = {d1['config_cost']:.0f}")
+    ax.set_yscale("log")
+    ax.legend(loc="upper right", ncol=2)
+    ax.annotate(f"cheaper on {d1['frac_days_cheaper']:.0%} of all days, but only "
+                f"{d1['frac_days_cheaper_sharp_crisis']:.0%} of sharp-crisis days\n"
+                f"break-even at k = {d1['break_even_k']:.0f}; observed k reaches "
+                f"{d1['k_max']}",
+                xy=(0.02, 0.06), xycoords="axes fraction", fontsize=8.5,
+                color=INK_SECONDARY)
+    _style(ax, "D1 · Is the community description actually smaller than the network?",
+           "numbers stored per day (log)", _stamp_label(stamp))
+    return _finish(fig, save)
+
+
+# ── Phase 7 ────────────────────────────────────────────────────────────────
+
+def plot_pca(scores, report, loadings, save=None):
+    """Fig. 7, plus the two diagnostics that turn it into evidence."""
+    fig = plt.figure(figsize=(11.5, 4.6))
+    gs = fig.add_gridspec(1, 3, width_ratios=[1.35, 1, 1])
+
+    ax = fig.add_subplot(gs[0, 0])
+    for fam, colour, label in (("conf", CONFIG, "configuration model"),
+                               ("comm", COMMUNITY, "community model"),
+                               ("real", INFERRED, "inferred network")):
+        d = scores[scores["family"] == fam]
+        ax.scatter(d["pc1"], d["pc2"], s=2.5, color=colour, alpha=0.18, lw=0,
+                   label=label)
+        c = report["per_family"][fam]["centroid"]
+        ax.scatter([c[0]], [c[1]], s=90, facecolors=SURFACE, edgecolors=colour,
+                   lw=2.0, zorder=5)
+    leg = ax.legend(loc="upper right", markerscale=4)
+    for h in leg.legend_handles:
+        h.set_alpha(1.0)
+    ev = report["explained_variance_ratio"]
+    _style(ax, "A · The three clouds in one shared PCA space",
+           f"PC2 ({ev[1]:.0%})", f"PC1 ({ev[0]:.0%})")
+
+    ax = fig.add_subplot(gs[0, 1])
+    n = len(ev)
+    ax.bar(np.arange(1, n + 1), ev, color=INFERRED, width=0.62, lw=0)
+    ax.plot(np.arange(1, n + 1), np.cumsum(ev), color=ACCENT, lw=1.6, marker="o",
+            ms=4, label="cumulative")
+    ax.set_xticks(np.arange(1, n + 1))
+    ax.legend(loc="lower right")
+    _style(ax, "B · Explained variance (E7 — never reported)",
+           "share of variance", "principal component")
+
+    ax = fig.add_subplot(gs[0, 2])
+    order = loadings["PC1"].abs().sort_values().index
+    y = np.arange(len(order))
+    ax.barh(y, loadings.loc[order, "PC1"], color=INFERRED, height=0.62, lw=0)
+    ax.set_yticks(y)
+    ax.set_yticklabels([MEASURE_LABEL.get(m, m) for m in order], fontsize=8)
+    ax.axvline(0, color=INK_SECONDARY, lw=0.8)
+    _style(ax, "C · PC1 loadings (E7)", None, "loading")
+    ax.grid(True, axis="x", alpha=0.7)
+
+    fig.suptitle(f"PCA over the eight measures — corr(PC1, date) = "
+                 f"{report['pc1_vs_time_corr']:+.2f}, "
+                 f"3-class classifier {report['classifier']['three_class_accuracy']:.0%} "
+                 f"vs {report['classifier']['chance_three_class']:.0%} chance",
+                 x=0.01, y=0.995, ha="left", fontsize=10.5, fontweight="bold",
+                 color=INK)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    if save:
+        fig.savefig(save, dpi=DPI, bbox_inches="tight")
+        print(f"[figure] {save}")
+    return fig
+
+
+# ── Phase 8 ────────────────────────────────────────────────────────────────
+
+SIGNAL_COLOR = {"modularity": INFERRED, "tau": ACCENT,
+                "mean_correlation": CONFIG, "isolated_nodes": COMMUNITY}
+SIGNAL_LABEL = {"modularity": "dynamical modularity Q(t)",
+                "tau": "τ(t) — the discarded threshold",
+                "mean_correlation": "mean pairwise correlation",
+                "isolated_nodes": "isolated nodes"}
+
+
+def plot_signals(dates, q, tau, rho, stamp="t2", save=None):
+    """8a: the three candidate crisis signals on a common time axis."""
+    fig, axes = plt.subplots(3, 1, figsize=(9.5, 7.0), sharex=True)
+    for ax, series, key in zip(axes, (q, tau, rho),
+                               ("modularity", "tau", "mean_correlation")):
+        shade_crises(ax, label=(key == "modularity"))
+        ax.plot(dates, series, color=SIGNAL_COLOR[key], lw=0.7)
+        _style(ax, SIGNAL_LABEL[key], None)
+    axes[0].legend(loc="upper left")
+    axes[2].set_xlabel(_stamp_label(stamp))
+    fig.suptitle("8a — τ(t) is thrown away by fixed-density thresholding (A7)",
+                 x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK)
+    return _finish(fig, save)
+
+
+def plot_detector_roc(dates, score_map, labels, report, save=None):
+    """8b: ROC curves for the detector the paper never built (E10)."""
+    from sklearn.metrics import roc_curve
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.4))
+
+    ax = axes[0]
+    for key, z in score_map.items():
+        ok = np.isfinite(z)
+        fpr, tpr, _ = roc_curve(labels[ok].astype(int), z[ok])
+        auc = report["detectors"][key]["sharp"]["auc"]
+        ax.plot(fpr, tpr, color=SIGNAL_COLOR[key], lw=1.6,
+                label=f"{SIGNAL_LABEL[key].split(' —')[0]}  AUC {auc:.3f}")
+    ax.plot([0, 1], [0, 1], color=INK_SECONDARY, lw=1.0, ls=":", label="chance")
+    ax.legend(loc="lower right", fontsize=8)
+    _style(ax, "A · Detecting pre-registered crisis windows",
+           "true positive rate", "false positive rate")
+
+    ax = axes[1]
+    best = report["best_detector_sharp"]
+    z = score_map[best]
+    shade_crises(ax, tiers=("sharp",), label=True)
+    ax.plot(dates, z, color=SIGNAL_COLOR[best], lw=0.7)
+    thr = report["detectors"][best]["sharp"]["threshold"]
+    ax.axhline(thr, color=INK, lw=1.0, ls="--",
+               label=f"best-F1 threshold z = {thr:.2f}")
+    ax.legend(loc="upper left", fontsize=8)
+    _style(ax, f"B · Best detector ({SIGNAL_LABEL[best].split(' —')[0]}) over time",
+           "trailing z-score", _stamp_label("t2"))
+    fig.suptitle("8b — the crisis detection Fig. 1 step (e) promises and the paper omits",
+                 x=0.01, y=0.995, ha="left", fontsize=11, fontweight="bold", color=INK)
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    if save:
+        fig.savefig(save, dpi=DPI, bbox_inches="tight")
+        print(f"[figure] {save}")
+    return fig
+
+
+def plot_event_study(curves, summary, save=None):
+    """8c: does modularity rise or fall around a crisis onset? (C1)"""
+    fig, ax = plt.subplots(figsize=(8.6, 4.6))
+    off = curves.index.to_numpy()
+    ax.axvspan(off.min(), 0, color=CRISIS_SHADE, alpha=0.12, lw=0,
+               label="pre-onset baseline")
+    ax.axvline(0, color=INK, lw=1.1, ls=":")
+    ax.axhline(0, color=INK_SECONDARY, lw=0.8)
+    for key in curves.columns:
+        ax.plot(off, curves[key], color=SIGNAL_COLOR.get(key, ACCENT), lw=1.6,
+                label=SIGNAL_LABEL.get(key, key).split(" —")[0])
+    ax.legend(loc="upper left", fontsize=8, ncol=2)
+    q = summary["modularity"]
+    ax.annotate(f"modularity at onset: {q['onset_minus_pre']:+.2f} sd\n"
+                f"following 60 days: {q['post_minus_pre']:+.2f} sd\n"
+                f"{q['frac_events_onset_below_pre']:.0%} of {q['n_events']} events "
+                "below their own baseline",
+                xy=(0.99, 0.04), xycoords="axes fraction", ha="right",
+                fontsize=8.5, color=INK_SECONDARY)
+    _style(ax, "8c · Every pre-registered crisis onset, aligned and averaged",
+           "deviation from pre-onset mean (sd)", "trading days from onset")
+    return _finish(fig, save)
+
+
+def plot_event_zoom(dates, series_map, start, end, title, ylabel_map=None,
+                    onset=None, save=None):
+    """Zoom several series onto one event window, one panel per series."""
+    import pandas as pd
+    dates = pd.DatetimeIndex(dates)
+    sel = (dates >= pd.Timestamp(start)) & (dates <= pd.Timestamp(end))
+    n = len(series_map)
+    fig, axes = plt.subplots(n, 1, figsize=(8.5, 2.3 * n + 0.8), sharex=True)
+    axes = np.atleast_1d(axes)
+    for ax, (name, values) in zip(axes, series_map.items()):
+        colour = FAMILY_COLOR.get(name, ACCENT)
+        ax.plot(dates[sel], np.asarray(values)[sel], color=colour, lw=1.3)
+        if onset is not None:
+            ax.axvline(pd.Timestamp(onset), color=INK, lw=1.0, ls=":")
+        _style(ax, name, (ylabel_map or {}).get(name))
+    if onset is not None:
+        axes[0].annotate(f"onset {onset}", xy=(pd.Timestamp(onset), 1.0),
+                         xycoords=("data", "axes fraction"),
+                         xytext=(4, -10), textcoords="offset points",
+                         fontsize=8.5, color=INK)
+    fig.suptitle(title, x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK)
+    return _finish(fig, save)

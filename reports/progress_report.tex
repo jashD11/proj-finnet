@@ -1,0 +1,987 @@
+% =====================================================================
+%  Financial Networks Project — Progress Report and Problem Statement
+%  Self-contained: compiles on Overleaf with no external .bib or images.
+%  To turn off the comment margins for printing, see \commentsfalse below.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm,marginparwidth=2.6cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+% Colours must exist before hyperref's options are parsed.
+\definecolor{BlueLink}{HTML}{1F4E79}
+\definecolor{GoodGreen}{HTML}{1B7A3D}
+\definecolor{BadRed}{HTML}{B3261E}
+\definecolor{WarnAmber}{HTML}{9A6700}
+
+\usepackage[colorlinks=true,linkcolor=BlueLink,citecolor=BlueLink,urlcolor=BlueLink]{hyperref}
+\usepackage{todonotes}   % must follow hyperref
+\hypersetup{breaklinks=true}
+\emergencystretch=3em      % long \texttt paths and DOIs must not overrun the margin
+
+% ---- Commenting scaffold -------------------------------------------------
+% Prof: either write in the margin with \pc{...}, or use Overleaf's native
+% review/comment mode (Review -> Add comment), which needs no macros at all.
+\newif\ifcomments\commentstrue          % \commentsfalse to hide all margin notes
+% NB: do not pass `inline=false` to \todo -- todonotes treats `inline` as a
+% flag, so any value (including false) turns inline notes ON. Omit it instead.
+\ifcomments
+  \newcommand{\pc}[1]{\todo[color=yellow!45,size=\scriptsize]{#1}}
+  \newcommand{\jd}[1]{\todo[color=cyan!25,size=\scriptsize]{#1}}
+  \newcommand{\open}[1]{\todo[color=orange!35,size=\scriptsize]{\textbf{OPEN:} #1}}
+\else
+  \newcommand{\pc}[1]{}\newcommand{\jd}[1]{}\newcommand{\open}[1]{}
+\fi
+
+\newcommand{\ok}{\textcolor{GoodGreen}{\textbf{reproduced}}}
+\newcommand{\partialx}{\textcolor{WarnAmber}{\textbf{partial}}}
+\newcommand{\nope}{\textcolor{BadRed}{\textbf{not reproduced}}}
+\newcommand{\Q}{Q}
+\newcommand{\Lap}{\mathbf{L}}
+\newcommand{\Amat}{\mathbf{A}}
+\newcommand{\Bmat}{\mathbf{B}}
+\newcommand{\Cmat}{\mathbf{C}}
+
+\setlist[itemize]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.4em}
+\setlist[enumerate]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.6em}
+
+\title{\vspace{-1.4cm}\textbf{Financial Networks Project}\\[2mm]
+\large Progress Report, Literature Review, and a Problem Statement\\
+\large on Laplacian versus Modularity Spectra}
+\author{Jash Dalal}
+\date{12 August 2026}
+
+\begin{document}
+\maketitle
+\vspace{-6mm}
+
+\begin{abstract}
+\noindent
+Three papers on learning network structure from financial time series have been
+replicated from scratch over the period 5~July~--~10~August~2026. This document
+(i)~records what was built, what reproduced and what did not, in chronological
+order; (ii)~extracts the findings that survived adversarial re-audit and are
+therefore usable as the foundation of new work; (iii)~reviews the literature on
+spectral indicators of market stress, separating the \emph{Laplacian} family
+(algebraic connectivity, spectral gap, Laplacian energy) from the
+\emph{modularity-matrix} family (leading and trailing eigenvalues, structural
+eigenvalue counts, detectability thresholds); and (iv)~proposes three research
+directions, with preliminary numerical evidence computed on the 6{,}315-day
+network sequence already built for Paper~3. The headline of that preliminary
+evidence: on the same data, under the same scoring protocol, the scalar
+modularity $Q$ detects crises at ROC-AUC $0.538$ while the spectrum of the
+modularity matrix it is derived from reaches $0.760$, and the correlation
+spectrum reaches $0.822$. The Fiedler value and the leading modularity
+eigenvalue --- exact affine duals on a regular graph --- are empirically
+\emph{near-orthogonal} on these networks ($r = -0.17$).
+\end{abstract}
+
+\noindent\textbf{How to comment.} The easiest route is Overleaf's own review mode
+(\textsf{Review $\rightarrow$ Add comment}); no macros needed. If you prefer
+margin notes in the source, \verb|\pc{...}| gives a yellow margin note,
+\verb|\open{...}| an orange one for unresolved questions. Section~\ref{sec:questions}
+collects the specific decisions I would like your view on.
+\pc{Prof: replace this note with a first comment to check the macro renders.}
+
+\tableofcontents
+\vspace{4mm}
+\hrule
+\vspace{4mm}
+
+% =====================================================================
+\section{Purpose and scope}
+% =====================================================================
+
+The work so far has been a \emph{literature review conducted by replication}:
+rather than reading three papers and summarising them, each was rebuilt from
+first principles, run on real data, and audited. That was deliberate. A
+summary tells you what a paper claims; a replication tells you which of those
+claims survive contact with data, and --- more useful for choosing a research
+problem --- which of them were never actually tested by the original authors.
+
+The output of that phase is a set of concrete, defensible gaps. This document
+converts them into a problem statement. The specific question on the table,
+raised in our last discussion, is:
+
+\begin{quote}
+Paper~1 uses the \emph{Fiedler value} $\lambda_2(\Lap)$ --- the second-smallest
+eigenvalue of a learned graph Laplacian --- as a market-stress indicator.
+Paper~3 uses \emph{modularity} $Q$ --- a scalar derived from a partition of a
+thresholded correlation network. Modularity has an underlying matrix, the
+modularity matrix $\Bmat$, whose eigenvalues and singular values nobody in this
+literature reports. Is there a study in comparing the Laplacian and the
+modularity matrix as sources of market indicators?
+\end{quote}
+
+Section~\ref{sec:problem} argues that there is, that it is well-posed, and that
+the comparison is more interesting than it first looks because the two operators
+are \emph{provably the same object on a regular graph} and yet behave completely
+differently on real market networks. Section~\ref{sec:directions} proposes three
+directions. Section~\ref{sec:prelim} gives the preliminary numbers that motivate
+them, computed this week on data already in hand.
+
+% =====================================================================
+\section{Timeline}
+% =====================================================================
+
+Dates are the git commit dates in \texttt{Financial\_networks\_project}; every
+row corresponds to code and results in the repository, not to notes.
+
+\begin{longtable}{@{}p{2.1cm} p{3.4cm} p{9.4cm}@{}}
+\toprule
+\textbf{Date} & \textbf{Milestone} & \textbf{What happened} \\
+\midrule
+\endhead
+2026-07-05 & \textbf{Paper 1} complete & GMRF graph-Laplacian learning (Cardoso \& Palomar). Solver, four experiments, figures, 769-line development log. \\
+2026-07-22 & Repo reorganised & Split into \texttt{paper1\_gmrf\_laplacian/}, \texttt{paper2\_ticc/}, \texttt{paper3\_market\_modularity/}; both source PDFs tracked. \\
+2026-07-22 & \textbf{Paper 2} solver & TICC: Toeplitz graphical-lasso ADMM, dynamic-programming assignment, EM loop; synthetic generator, metrics, six baselines. \\
+2026-07-22 & Paper 2 experiments & Table 1, Table 2, Figs.\ 3--4, notebook. \\
+2026-07-28 & Paper 2 audit & Replication status reported honestly: three genuine non-reproductions identified and \emph{not} absorbed into the headline. \\
+2026-08-09 & \textbf{Paper 3} Phases 0--4 & Universe and price panel; pre-registered crisis windows; returns and quality gates; 6{,}315 daily networks; Louvain communities, $k[t]$, $\Pi[t]$, three modularities; blockmodel and configuration nulls (126{,}300 generated graphs). \\
+2026-08-10 & Paper 3 Phases 5--9 & Eight topological measures (132{,}615 graph evaluations); scoring with the overlap correction; PCA; extensions (crisis detector, event study, Louvain stability); replication report and notebook. \\
+2026-08-10 & Paper 3 re-audit & Adversarial re-audit of the replication itself: which non-reproductions are real, which are our artifacts. Eight defects found in our own criticisms. \\
+2026-08-12 & \textbf{This document} & Literature review on spectral stress indicators; problem statement; three directions; preliminary spectral probe on the Paper-3 network sequence. \\
+\bottomrule
+\end{longtable}
+
+% =====================================================================
+\section{Part I --- What was built and what it showed}
+% =====================================================================
+
+\subsection{Paper 1: learning graph Laplacians from returns}
+
+\textbf{Source.} Cardoso \& Palomar, \emph{Learning Undirected Graphs in
+Financial Markets}, 54th Asilomar Conference on Signals, Systems and Computers,
+2020, \href{https://arxiv.org/abs/2005.09958}{arXiv:2005.09958}. The extended
+treatment is \href{https://arxiv.org/abs/2012.15410}{arXiv:2012.15410}.
+
+\textbf{Method.} A penalised maximum-likelihood estimate of a precision matrix
+constrained to be a valid graph Laplacian:
+\begin{equation}
+\min_{\Lap} \; \operatorname{tr}(\Lap S) - \log \operatorname{gdet}(\Lap) + h_\alpha(\Lap)
+\quad\text{s.t.}\quad \Lap \mathbf{1} = 0,\; \Lap_{ij}\le 0 \;(i \ne j),\; \Lap \succeq 0,
+\end{equation}
+where $S$ is the sample correlation matrix and $\operatorname{gdet}$ is the
+pseudo-determinant (a valid Laplacian is singular, so $\det \Lap = 0$). The
+constraints have financial content: $\Lap\mathbf{1}=0$ removes the market
+factor, and $\Lap_{ij}\le 0$ forces all conditional correlations non-negative.
+Algorithm~1 adds a spectral penalty to force $k$ connected components;
+Algorithm~2 rolls Algorithm~1 causally over 30-day windows with a temporal
+smoothness penalty $\delta\sum_t \|\Lap_t - \Lap_{t-1}\|_F^2$. The indicator is
+$\lambda_2(\Lap_t)$, the algebraic connectivity or Fiedler value
+\cite{fiedler1973}, and the trading rule is: hold the portfolio when
+$\lambda_2 < \tau$, sit in cash otherwise, with $\tau=1.0$.
+
+\textbf{Implementation.} Rather than the paper's ADMM, the solver works in
+edge-weight space: $\Lap = \mathcal{L}w$ with $w \ge 0$, which makes the
+Laplacian constraints automatic and turns the problem into a bound-constrained
+smooth minimisation solved by L-BFGS-B. Degree control ($\operatorname{diag}\Lap
+= 1$) becomes a quadratic penalty; the $k$-component constraint becomes Fan's
+spectral penalty with strength $\eta$.
+
+\textbf{Status.}
+\begin{itemize}
+\item Fig.~1 (preprocessing) --- \ok. Panel (d), scaled data with the market
+factor \emph{not} explicitly removed, is cleanest, as the paper claims.
+\item Fig.~2 ($k$-component vs.\ SGL) --- \ok. True $k=3$ (rank $94 = p-3$ at
+$p=97$) achieved, but only at $\eta = 300$; $\eta \in \{10, 150\}$ is
+insufficient. The paper does not report needing this.
+\item Fig.~3 (time-varying $\lambda_2$) --- \ok. Our $\lambda_2 \in [0.66,
+1.50]$ matches the paper's monthly regime structure.
+\item Fig.~4 (trading) --- \partialx. \emph{The mechanism replicates and the
+P\&L ranking does not.} With the paper's own $\tau = 1.0$ and evaluation window
+(ending 2020-05-01), the gate is live (79 of 201 days invested). S2 dodges the
+COVID crash exactly as the paper shows --- flat at $\approx -0.01$ while
+buy-and-hold falls to $-0.21$ --- and also sits out autumn 2019. But our
+$\lambda_2$ stays near $1.3$ through April where the paper's drops below $1.0$,
+so S2 misses the rebound: final S2 $= -0.011$ against S1 $= +0.078$.
+No threshold was tuned to fix this.
+\end{itemize}
+
+\textbf{The most instructive failure.} An early version of the temporal penalty
+used $S_{\text{aug}} = S_t + (2\delta/n_t)\Lap_{t-1}$. The Frobenius cross-term
+is $-2\delta\operatorname{tr}(\Lap\,\Lap_{t-1})$, so the sign was inverted: the
+penalty \emph{repelled} each window from its predecessor. The symptom was
+$\lambda_2$ collapsing into $[0, 0.78]$ with 65 windows at exactly zero
+(disconnected estimates), which made $\tau=1.0$ non-binding and the trading
+figure vacuous. This is recorded because it is the kind of error that produces a
+plausible-looking figure: a stress indicator that spends its time near zero and
+spikes occasionally still \emph{looks} like a stress indicator.
+\jd{Worth keeping in mind for any new indicator we build: check that the
+proposed threshold actually gates before interpreting the backtest.}
+
+\subsection{Paper 2: TICC}
+
+\textbf{Source.} Hallac, Vare, Boyd \& Leskovec, \emph{Toeplitz Inverse
+Covariance-Based Clustering of Multivariate Time Series Data}, KDD 2017,
+\href{https://arxiv.org/abs/1706.03161}{arXiv:1706.03161} \cite{hallac2017}.
+
+\textbf{Method.} Simultaneous segmentation and clustering: each cluster is a
+block-Toeplitz Gaussian MRF over a length-$w$ window; the M-step is a Toeplitz
+graphical lasso solved by ADMM, the E-step an exact Viterbi assignment with a
+switching penalty $\beta$.
+
+\textbf{Status.} The headline reproduces --- TICC reaches macro-F1 $\approx
+0.99$ against the paper's $0.95$ average, and is genuinely robust across data
+seeds ($\sigma \le 0.006$). Three things do not:
+\begin{itemize}
+\item The \textbf{$\beta = 0$ ablation is systematically too weak} (our $0.80$
+average vs.\ the paper's $0.88$), which means our replication \emph{overstates}
+the value of the temporal-consistency penalty. This is the one place our error
+points away from the paper's own conclusion, so it leads the report. \nope
+\item Network recovery (Table 2) sits at $0.80$ against the paper's $0.85$ band.
+\partialx
+\item Fig.~4 is a timing proxy that never calls the fitting routine, over a
+narrower range of $T$ than the paper's $10^4$--$10^7$. \partialx
+\end{itemize}
+Known thumbs on the scale, disclosed: segment length 400 everywhere instead of
+the paper's $100K$ (up to $2\times$ the data), and generator edge weights bounded
+away from zero. Window-size robustness, the micro-F1 cross-check and BIC
+selection of $K$ are \textbf{not implemented}.
+
+\textbf{Relevance going forward.} TICC is the one of the three that estimates a
+\emph{regime}, not a snapshot. It is not central to the Laplacian-vs-modularity
+question, but it is the natural comparator if we ever want to ask whether a
+spectral indicator is doing anything a proper regime-switching model would not.
+\pc{Do you want Paper 2 carried forward at all, or parked?}
+
+\subsection{Paper 3: modular dynamics of financial market networks}
+
+\textbf{Source.} Silva, Comin, Peron, Rodrigues, Ye, Wilson, Hancock \& Costa,
+\emph{Modular Dynamics of Financial Market Networks},
+\href{https://arxiv.org/abs/1501.05040}{arXiv:1501.05040} (2015) \cite{silva2015}.
+
+\textbf{Method.} Log returns; Pearson correlation over a $\Delta t = 30$-return
+sliding window shifted by one day; a threshold $\tau(t)$ re-solved every day so
+that exactly $f = 10\%$ of pairs survive (fixed density, not fixed threshold);
+binarise. Louvain communities each day, giving $Q(t)$ and $k(t)$. Then the
+central construction: keep \emph{only} the community sizes and the
+inter-community mixing matrix $\Pi(t)$, discard the network, and regenerate a
+random graph from that summary alone. The claim is that this compressed
+description reproduces the real network's topology, and that crises move the
+market from well-defined communities to a uniform organisation.
+
+\textbf{Scale of the replication.} $N = 360$ NYSE stocks $\times$ $T = 6{,}345$
+trading days (paper: $348 \times 6{,}008$), 6{,}315 daily networks, 126{,}300
+generated null graphs, 132{,}615 graph evaluations across eight topological
+measures. Organised around a 26-item methodological audit written \emph{before}
+implementation began, with crisis windows pre-registered in Phase 0 so that no
+detector could be tuned after seeing the data.
+
+\textbf{What reproduces.} The community null tracks real modularity at $\rho =
+0.98$ (paper: $0.99$). Mean degree is exactly $f(N-1) = 35.90$ every day.
+Crises shatter the network: $Q$ falls to $0.0897$ on 1987-10-19, the 25-year
+low, with $k \to 156$. The configuration-model noise floor is $Q = 0.1065 \pm
+0.0145$, matching the $\approx\!0.10$ the paper draws but never states. Across
+all 32 cells of the paper's correlation table the mean absolute difference is
+$0.155$ and the sign agrees on 97\%.
+
+\textbf{What the paper's own construction does not support.} These are the
+results worth carrying forward, and they are the reason the current problem
+statement exists.
+
+\begin{enumerate}
+\item \textbf{The level of $Q$ is not evidence.} Running the identical pipeline
+on i.i.d.\ Gaussian returns of the same shape gives Louvain $Q = 0.2246 \pm
+0.0067$ against the real market's $0.2215 \pm 0.0413$. Structureless data is, if
+anything, marginally \emph{more} modular. Only the \emph{variance} of $Q$
+distinguishes the market ($6\times$ that of noise). The mechanism is that a
+correlation matrix is positive semi-definite, so thresholding it yields a graph
+that is transitive by construction, and transitive graphs are modular; no
+degree-sequence null can control for this, because rewiring destroys the
+geometry along with the structure.
+\item \textbf{The compression claim inverts exactly where the story lives.} The
+community summary costs $k + k(k+1)/2$ numbers against the degree sequence's
+$N$; break-even is $k = 25.4$. It is cheaper on 69.3\% of all days but only
+34.3\% of pre-registered sharp-crisis days, because the network shatters into
+singletons and $k$ reaches 156.
+\item \textbf{$\tau(t)$, which fixed-density thresholding throws away, detects
+crises far better than modularity does.} Against the pre-registered windows
+(2.7\% base rate): mean correlation $0.807$, $\tau(t)$ $0.807$, isolated-node
+count $0.760$, dynamical modularity $\mathbf{0.538}$. The paper's Fig.~1 has a
+box labelled ``crisis detection evaluation'' and the paper performs none; when
+it is built, the paper's central quantity is the weakest of the four signals its
+own pipeline produces.
+\item \textbf{Louvain instability rivals the signal.} Ten seeds per day: the
+same-day seed-to-seed spread in $Q$ is $2.09\times$ the median day-to-day move
+and exceeds it on 77.9\% of days. Same-day NMI between seeds is $0.543$;
+consecutive-day NMI at fixed seed is $0.463$. Two runs on identical data agree
+only $+0.079$ more than runs on different days.
+\item \textbf{The eight measures are about three.} Mean $|\rho|$ between
+measures $0.607$; three of eight principal components carry 90\% of the variance.
+\end{enumerate}
+
+\textbf{The negative result, reported as prominently as the positive ones.} The
+audit's own central hypothesis was that every correlation in the paper is
+computed on 30-day windows slid by one day, so consecutive points share 29/30 of
+their data, and $\approx 200$ effectively independent points are presented as
+5{,}978. Recomputing on non-overlapping windows moves the mean $\rho$ from
+$0.783$ to $\mathbf{0.777}$. The mechanism is real --- a unit test shows two
+independent random walks correlating at $|\rho| > 0.3$ through the same windows
+--- but overlap inflates correlations that are \emph{spurious}, and these are
+not. Effective sample size falls from 6{,}315 to 211, so the confidence
+intervals should widen; the point estimates stand.
+
+\textbf{The re-audit (2026-08-10).} The replication was then attacked in the
+same way it had attacked the paper. Results: all 32 paper cells were transcribed
+correctly, and the four non-reproduced cells survive nine implementation
+variants --- they are real. But the \emph{cause} is upstream of the null model:
+our networks fragment on 63\% of days (99.3\% post-2002, median 30 isolated
+stocks) where the paper implies fragmentation is a Black-Monday-only event.
+Degree-null modularity correlates $-0.875$ with the isolated-node count, and on
+fully connected days $\rho(\Q_{\text{real}}, \Q_{\text{conf}})$ falls from
+$0.579$ to $0.187$, near the paper's $+0.07$. Eight defects were found in our
+own criticisms (matching-index definition, a circular rich-club normalisation,
+an over-stated NMSE claim, a noise-excess ratio computed against two different
+floors, among others). Unaffected and solid: the compression inversion, the
+Louvain instability, the overlap negative result, the noise-level control, and
+the crisis detector.
+
+\textbf{Deliberately out of scope, recorded so nothing is silently dropped:}
+robustness to $\Delta t \in \{20,60,120\}$; market-mode removal before network
+construction; a mechanism for the paper's own unexplained 2002 structural break.
+All three re-enter as first-class questions in Section~\ref{sec:directions}.
+
+% =====================================================================
+\section{Part II --- What the three replications jointly establish}
+% =====================================================================
+
+Stripped of the paper-by-paper detail, five things are now known well enough to
+build on:
+
+\begin{enumerate}[label=\textbf{F\arabic*.}]
+\item \textbf{Thresholding a correlation matrix manufactures the structure it
+then measures.} A PSD matrix thresholded at fixed density is transitive by
+construction; i.i.d.\ noise reproduces 80\% of the market's modularity excess
+over a degree-sequence null. This is not specific to Paper~3 --- it applies to
+any paper in the thresholded-correlation-network literature, which is precisely
+the argument of the recent \emph{Physics Reports} review \cite{masuda2025}.
+\item \textbf{Fixed-density thresholding discards the strongest crisis signal
+the pipeline produces.} $\tau(t)$ and mean correlation both reach AUC $0.807$;
+they are available before any community is detected, at zero cost.
+\item \textbf{Scalar summaries of a partition are noisy and weak.} Louvain's
+seed-to-seed jitter is twice the daily signal, and $Q$'s crisis-detection AUC is
+$0.538$ against a 2.7\% base rate.
+\item \textbf{The Laplacian-based indicator of Paper~1 works through a specific
+and fragile mechanism.} $\lambda_2$ is only interpretable when the graph is
+connected and the estimation is regularised; both the sign bug and the
+disconnection episodes reduced it to noise.
+\item \textbf{The two literatures do not talk to each other.} Paper~1 estimates
+a Laplacian and reads its second-smallest eigenvalue. Paper~3 thresholds a
+correlation matrix and reads a scalar derived from a partition of it. Neither
+looks at the operator the other uses; neither reports a spectrum.
+\end{enumerate}
+
+% =====================================================================
+\section{Part III --- Problem statement: Laplacian versus modularity spectra}
+\label{sec:problem}
+% =====================================================================
+
+\subsection{The two operators}
+
+Let $\Amat$ be the adjacency matrix of a network on $N$ nodes with degrees $d_i$
+and $m$ edges, $2m = \sum_i d_i$.
+
+\begin{align}
+\text{Laplacian:} \qquad & \Lap = \mathbf{D} - \Amat,
+&& 0 = \lambda_1 \le \lambda_2 \le \dots \le \lambda_N, \\
+\text{Modularity matrix:} \qquad & \Bmat = \Amat - \frac{\mathbf{d}\mathbf{d}^{\!\top}}{2m},
+&& \mu_N \le \dots \le \mu_2 \le \mu_1 .
+\end{align}
+
+They are read from opposite ends. $\Lap$ is positive semi-definite; its small
+eigenvalues describe how close the graph is to falling apart, and $\lambda_2$ is
+the Fiedler value \cite{fiedler1973}. $\Bmat$ is indefinite by construction
+($\Bmat\mathbf{1} = 0$, so it always has a zero eigenvalue with $\operatorname{tr}\Bmat < 0$);
+its \emph{largest} eigenvalues describe community structure \cite{newman2006pre,
+newman2006pnas}, and --- the part almost nobody uses --- its \emph{most negative}
+eigenvalues describe \emph{anti}-community structure, groups that avoid each
+other \cite{fasino2018anti}.
+
+\subsection{The identity that makes the comparison non-trivial}
+
+For a connected \emph{$d$-regular} graph, $\Lap = d\mathbf{I} - \Amat$ and
+$\Bmat = \Amat - (d/N)\mathbf{J}$. The all-ones vector is the top eigenvector of
+$\Amat$ and is annihilated by both, so with $\nu_i$ the adjacency eigenvalues,
+\begin{equation}
+\lambda_2(\Lap) = d - \nu_2(\Amat), \qquad
+\mu_1(\Bmat) = \nu_2(\Amat)
+\quad\Longrightarrow\quad
+\boxed{\;\lambda_2(\Lap) + \mu_1(\Bmat) = d\;}
+\label{eq:duality}
+\end{equation}
+whenever $\nu_2 > 0$. \emph{On a regular graph the Fiedler value and the leading
+modularity eigenvalue are the same number, read backwards.} A study that
+compared them there would be measuring nothing.
+
+This is exactly why the comparison \emph{is} interesting on market networks.
+Paper~3's construction holds the \emph{mean} degree at $f(N-1) = 35.90$ on every
+single day, so the networks are as close to the regular case as any real
+construction gets --- and yet, measured on all 6{,}315 days:
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Quantity & Value \\
+\midrule
+$\bar d$ (exact, every day) & $35.900$ \\
+Residual $\bar d - [\lambda_2(\Lap) + \mu_1(\Bmat)]$ & $9.49 \pm 4.63$ \\
+\quad restricted to the 2{,}342 connected days & $9.21 \pm 3.60$ \\
+\quad on the largest connected component only & $11.11 \pm 5.31$ \\
+$\operatorname{corr}(\lambda_2(\Lap), \mu_1(\Bmat))$ & $\mathbf{-0.187}$ \\
+\quad connected days only & $-0.119$ \\
+\quad largest connected component only & $-0.169$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The identity fails by 26\% of the mean degree, and the two quantities are
+\emph{near-orthogonal in practice}. That gap is not noise: it is degree
+heterogeneity and fragmentation, and it is measurable. \textbf{The research
+question is therefore not ``which indicator is better'' but ``the two operators
+are duals in theory and independent in practice --- what exactly is the
+difference measuring, and does it carry information about market stress?''}
+That is a well-posed question with a clean answer available.
+\pc{This framing is the part I would most like your reaction to. The alternative
+framing --- a plain empirical horse race between indicators --- is easier to
+execute but much less interesting, and reviewers in this area have seen many
+horse races.}
+
+\subsection{Literature map}
+
+\paragraph{Laplacian-side indicators in finance.} Cardoso \& Palomar
+\cite{cardoso2020,cardoso2021} learn a Laplacian-constrained precision matrix and
+use $\lambda_2$ as the stress indicator; this is Paper~1. Kang, Yen \& Cheong
+\cite{kang2025} build filtration networks from correlation distances and use the
+\emph{maximum spectral gap} of the unnormalised Laplacian,
+$\max_{k\ge 2}(\lambda_{k+1}-\lambda_k)$, arguing that it is large during
+crashes and zero otherwise, and using it to assign crashes a \emph{duration}
+rather than a date. A parallel strand uses aggregate spectral functionals rather
+than single eigenvalues: Laplacian energy \cite{lapenergy2023} and the
+Laplacian-energy-like measure \cite{lel2025} as early-warning inputs. On the
+covariance side rather than the graph side, the absorption ratio of Kritzman,
+Li, Page \& Rigobon \cite{kritzman2011} --- the variance share of the leading
+principal components --- is the best-established spectral systemic-risk measure
+in finance, and is a mandatory baseline for anything we propose.
+
+\paragraph{Modularity-side theory.} Newman introduced the modularity matrix and
+the leading-eigenvector method \cite{newman2006pre,newman2006pnas}. Its spectral
+theory has since been worked out carefully: Bolla et al.\ \cite{bolla2015} give
+conditions under which the modularity spectrum has at least one positive
+eigenvalue, i.e.\ a non-trivial community structure exists at all; Fasino \&
+Tudisco \cite{fasino2014,fasino2016} analyse generalised modularity matrices and
+show that the number of positive eigenvalues upper-bounds the number of disjoint
+modules, and \cite{fasino2018anti} use the extreme \emph{negative} eigenvalues
+for anti-community detection. On the random-matrix side, Chauhan, Girvan \& Ott
+\cite{chauhan2009} and Sarkar, Henderson \& Robinson \cite{sarkar2013} show that
+the number of communities and the depth of a hierarchy are fingerprinted by
+eigenvalues separated from the bulk; Peixoto \cite{peixoto2013} computes the
+spectra of modular networks and identifies the point at which the isolated
+eigenvalues merge into the bulk; Nadakuditi \& Newman \cite{nadakuditi2012}
+locate the resulting \emph{detectability threshold} and show that spectral
+modularity maximisation is optimal in the sense that no method succeeds where it
+fails. For sparse graphs the non-backtracking operator \cite{krzakala2013} and
+the Bethe Hessian \cite{saade2014} push that threshold to the information-theoretic
+limit and are the correct comparators if we ever move to a sparse regime.
+
+\paragraph{Correlation-specific null models.} The single most relevant reference
+is MacMahon \& Garlaschelli \cite{macmahon2015}: applying network community
+detection to correlation matrices is \emph{intrinsically biased}, because the
+null model implicit in modularity (the configuration model) is inconsistent with
+the statistics of correlation matrices. They redefine the modularity matrix
+using a random-matrix-theory null, subtracting both the market mode and the
+Marchenko--Pastur bulk, so that the residual contains only genuine group
+structure. This is exactly the object Paper~3 needed and did not use --- and it
+is the natural ``correct'' modularity matrix for our comparison. The classical
+RMT results it rests on are Laloux et al.\ \cite{laloux1999} and Plerou et al.\
+\cite{plerou1999}. The recent \emph{Physics Reports} review by Masuda, Boyd,
+Garlaschelli \& Mucha \cite{masuda2025} surveys the whole
+``beyond-thresholding'' agenda and is the best single framing citation for why
+Paper~3's construction is the weak link.
+
+\paragraph{Financial network structure, for context.} The filtering tradition
+--- minimum spanning trees \cite{mantegna1999} and planar maximally filtered
+graphs \cite{tumminello2005} --- is the alternative to thresholding. Temporal
+community structure in markets was studied by Fenn et al.\ \cite{fenn2011}
+using the multislice modularity of Mucha et al.\ \cite{mucha2010}; Paper~3 cites
+that machinery and does not use it, which is the direct cause of its Louvain
+instability problem. Geometric alternatives (Ollivier--Ricci curvature) were
+proposed as fragility indicators by Sandhu, Georgiou \& Tannenbaum
+\cite{sandhu2016} and are a good third baseline.
+
+\subsection{The gap}
+
+Putting the map together:
+
+\begin{itemize}
+\item The Laplacian spectrum has been used as a market indicator, in at least
+three different forms ($\lambda_2$, the maximum spectral gap, Laplacian energy).
+\item The modularity \emph{matrix} has a well-developed spectral theory, with
+results --- structural eigenvalue counts, detectability thresholds,
+anti-community eigenvalues --- that are exactly the sort of thing a market
+indicator would want.
+\item \textbf{Nobody has applied the modularity spectrum to markets.} Searches
+across the finance-network literature return modularity used only as a scalar
+$Q$ from a partition. No paper reports $\mu_1(\Bmat)$, $\mu_N(\Bmat)$, the count
+of structural eigenvalues, or the spectral gap of $\Bmat$ as a time series for a
+market.
+\item No paper compares the two operators on common data with a common scoring
+protocol, and the one theoretical fact that makes such a comparison sharp ---
+Eq.~\eqref{eq:duality} --- appears not to have been used as an organising
+principle.
+\end{itemize}
+
+We are unusually well-placed to close this: the pipeline, the 6{,}315-day
+network sequence, the pre-registered crisis windows and the scoring code all
+already exist, and the audit already tells us where the traps are.
+
+% =====================================================================
+\section{Part IV --- Three proposed directions}
+\label{sec:directions}
+% =====================================================================
+
+They are ordered by how directly they answer your question. D1 is the core
+comparative study; D2 is the theoretical contribution that makes D1 mean
+something; D3 is the extension that uses the existing findings most aggressively.
+D1 and D2 naturally combine into a single paper; D3 could be a second.
+
+% ---------------------------------------------------------------
+\subsection{D1 --- The operator comparison: duality, and what breaks it}
+
+\textbf{Question.} $\lambda_2(\Lap)$ and $\mu_1(\Bmat)$ are affine duals on a
+regular graph (Eq.~\ref{eq:duality}) and near-orthogonal on real market networks
+($r = -0.17$). Decompose the residual. Which component of it --- degree
+heterogeneity, fragmentation, or the market mode --- carries the market-stress
+information, and which operator exposes it more directly?
+
+\textbf{What we would build.}
+\begin{enumerate}
+\item A single pipeline that, for each day, computes the full spectrum of a
+\emph{family} of operators on the same network: $\Amat$, $\Lap$, the normalised
+Laplacian $\mathcal{L} = \mathbf{D}^{-1/2}\Lap\mathbf{D}^{-1/2}$, $\Bmat$, the
+normalised modularity matrix, and --- crucially --- the RMT-corrected
+correlation modularity matrix of MacMahon \& Garlaschelli \cite{macmahon2015},
+which needs no thresholding at all.
+\item An exact decomposition of the duality residual $\bar d - [\lambda_2 +
+\mu_1]$ into a degree-heterogeneity term and a connectivity term, validated
+against the observed $9.49 \pm 4.63$.
+\item A common scoring harness --- the Phase-0 pre-registered crisis windows,
+trailing-$z$ detector, ROC-AUC, and out-of-sample chronological split --- so
+that every operator is judged identically. This already exists and was used to
+produce the numbers in Section~\ref{sec:prelim}.
+\item Robustness over the parameters Paper~3 never tested: $\Delta t \in
+\{20,30,60,120\}$, density $f$, universe size, and with/without market-mode
+removal. This retires audit items A5 and A6 as a by-product.
+\end{enumerate}
+
+\textbf{Why it is publishable.} It is not a horse race; it is a structural
+result with a horse race attached. The claim ``these two indicators are the same
+statistic on a regular graph and independent on market networks, and here is
+exactly what the difference is'' is checkable, surprising, and useful to the
+sizeable literature that picks one operator without argument.
+
+\textbf{Main risk.} The decomposition may turn out to be dominated by
+fragmentation, which is an artifact of fixed-density thresholding rather than a
+property of markets. Mitigation: the largest-connected-component variant is
+already computed (residual $11.11 \pm 5.31$, $r = -0.169$), so the finding
+survives removing fragmentation --- but this needs to be established across
+constructions, not just this one.
+
+% ---------------------------------------------------------------
+\subsection{D2 --- Detectability: is there community structure to detect at all?}
+
+\textbf{Question.} Paper~3 estimates a $360\times360$ correlation matrix from 30
+observations. The ratio $q = N/\Delta t = 12$ puts the Marchenko--Pastur band at
+$[6.07, 19.93]$, and the whole matrix has rank at most 29. \emph{Under
+random-matrix theory, how many eigenvalues of the daily correlation matrix
+actually escape the noise bulk --- and therefore how many communities is it even
+possible to detect?}
+
+Preliminary answer, computed this week on all 6{,}315 days: excluding the market
+mode, the mean number of eigenvalues above the Marchenko--Pastur upper edge is
+$\mathbf{0.70}$, with a maximum of $3$. On a typical day there is \emph{less
+than one} statistically distinguishable group mode. Louvain nonetheless returns
+a median of 9 communities every day, and the paper builds a 25-year narrative on
+their dynamics.
+
+\textbf{What we would build.}
+\begin{enumerate}
+\item A \emph{detectability phase diagram} over $(\Delta t, N, f)$: for each
+combination, where does the market sit relative to (a) the Marchenko--Pastur
+edge and (b) the Nadakuditi--Newman spectral detectability threshold
+\cite{nadakuditi2012} for the resulting network? This tells any practitioner in
+this literature whether their parameter choice is inside or outside the region
+where community structure is estimable.
+\item A deterministic, algorithm-free replacement for $k(t)$: the count of
+structural eigenvalues of $\Bmat$ (\cite{bolla2015,fasino2016}) and of
+RMT-escaping modes of $\Cmat$, compared against Louvain's $k(t)$ and its
+seed-to-seed spread. This directly retires the Louvain-instability problem (F3)
+rather than measuring it.
+\item A statement of how much of Paper~3's --- and the wider literature's ---
+community dynamics survives once the estimable region is respected.
+\end{enumerate}
+
+\textbf{Why it is publishable.} This is a methodological result the
+thresholded-correlation-network literature needs and does not have; it is the
+constructive version of the ``beyond thresholding'' argument \cite{masuda2025}.
+It also converts our strongest replication finding --- that i.i.d.\ noise
+reproduces 80\% of the market's modularity excess --- from a simulation into a
+theorem-backed statement.
+
+\textbf{Main risk.} The answer may be uninteresting in one direction: if
+essentially \emph{no} configuration used in the literature is inside the
+detectable region, the contribution is purely negative. That is still worth
+publishing, but it is a different (and harder to place) paper. Mitigation: the
+phase diagram will identify \emph{which} $(\Delta t, N)$ combinations are
+usable, which is constructive.
+
+% ---------------------------------------------------------------
+\subsection{D3 --- The negative spectrum: anti-communities and the 2002 break}
+
+\textbf{Question.} The Laplacian is blind to sign and the thresholded network
+deletes every negative correlation. Paper~3's construction discards
+$4{,}246{,}798$ pair-days with $\rho < -\tau$ --- strong anticorrelations
+recorded identically to no relationship at all --- and that series
+\emph{collapses to near zero from roughly 2003 onward and never recovers}, close
+to the paper's own unexplained 2002 structural break, which it lists as future
+work. The modularity matrix, unlike the Laplacian, has a meaningful negative
+spectrum: $\mu_N(\Bmat)$ and its eigenvector identify anti-communities
+\cite{fasino2018anti}. \emph{Does the negative spectrum recover the discarded
+signal, and does it explain the 2002 break?}
+
+Preliminary: $\mu_N(\Bmat)$ detects the pre-registered crises at ROC-AUC
+$\mathbf{0.760}$ --- better than every Laplacian statistic we computed, and far
+better than $Q$'s $0.538$.
+
+\textbf{What we would build.} Signed correlation networks with no thresholding
+step; the signed Laplacian and SPONGE-style generalised eigenproblems as
+comparators; the negative modularity spectrum as the indicator; and a formal
+change-point analysis of the 2002--2003 transition in the sign structure,
+against candidate mechanisms (decimalisation in 2001, ETF and index-fund growth,
+algorithmic trading).
+
+\textbf{Why it is publishable.} It answers a question the original authors
+explicitly left open, using a quantity they structurally could not see.
+
+\textbf{Main risk.} $\mu_N(\Bmat)$ correlates $0.68$ with the market-mode
+signal, so part of its $0.760$ is not new information (see
+Section~\ref{sec:prelim}). The direction is only worth pursuing if the
+\emph{residual} after projecting out the market mode still carries signal ---
+which is a two-day check, and should be the gate before committing.
+
+% ---------------------------------------------------------------
+\subsection{Recommendation}
+
+\textbf{D1 + D2 as one project, D3 gated on a quick check.} D1 alone risks being
+a horse race; D2 alone risks being a negative result; together they are a single
+coherent claim: \emph{here is the correct operator to read market community
+structure from, here is the region of parameter space where reading it is
+meaningful at all, and here is what the field's two incumbent indicators are
+actually measuring.} D3 is a good second paper and a bad first one.
+
+% =====================================================================
+\section{Part V --- Preliminary evidence}
+\label{sec:prelim}
+% =====================================================================
+
+Computed 12 August 2026 on the existing Paper-3 network sequence: $N = 360$
+stocks, 6{,}315 daily networks, 1987--2011. For each day, the full spectrum of
+$\Lap$, of $\Bmat$, and of the raw correlation matrix $\Cmat$ was computed
+(three $360\times360$ symmetric eigendecompositions per day). Every signal was
+then scored through the \emph{identical} detector already used in the
+replication: trailing 250-day $z$-score using only data strictly before the day
+scored, ROC-AUC against the Phase-0 pre-registered \emph{sharp}-tier crisis
+windows (base rate 2.68\%). The sign of each detector (spike vs.\ drop) was
+chosen to favour it, which is generous and is noted as such.
+
+\begin{center}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Signal} & \textbf{Operator} & \textbf{AUC (sharp)} \\
+\midrule
+Spectral entropy of $\Cmat$ (effective rank) & correlation & \textbf{0.822} \\
+$\lambda_1(\Cmat)/N$ (absorption ratio) & correlation & 0.812 \\
+$\tau(t)$ (fixed-density threshold) & --- & 0.807 \\
+$\mu_N(\Bmat)$ (anti-community edge) & \textbf{modularity} & \textbf{0.760} \\
+Isolated-node count & Laplacian null space & 0.756 \\
+$\sum_{\mu_i > 0}\mu_i$ (positive modularity mass) & \textbf{modularity} & 0.750 \\
+$\lambda_N(\Lap)$ (largest Laplacian eigenvalue) & Laplacian & 0.731 \\
+$\#\{\mu_i > 0\}$ (structural eigenvalue count) & \textbf{modularity} & 0.722 \\
+$\lambda_2(\Lap)$ on the largest component & Laplacian & 0.652 \\
+$\mu_1 - \mu_2$ (modularity spectral gap) & \textbf{modularity} & 0.636 \\
+$\lambda_2(\Lap)$ (Fiedler value, whole graph) & Laplacian & 0.617 \\
+$\mu_1(\Bmat)$ (leading modularity eigenvalue) & \textbf{modularity} & 0.607 \\
+$\#$ modes above Marchenko--Pastur edge & correlation & 0.619 \\
+$Q(t)$ (Louvain modularity --- the paper's signal) & partition scalar & 0.538 \\
+$\max_k(\lambda_{k+1}-\lambda_k)$ (max Laplacian gap) & Laplacian & 0.526 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Readings.}
+\begin{enumerate}
+\item \textbf{The modularity matrix beats the modularity scalar decisively.}
+$Q(t)$ scores $0.538$; three separate statistics of the matrix it is derived
+from score $0.72$--$0.76$. The information is in the operator; collapsing it to
+one number through a stochastic partition destroys most of it. \emph{This is the
+direct empirical answer to your question, and it is a clean one.}
+\item \textbf{The Laplacian statistics are weak on this construction.} The
+Fiedler value reaches $0.617$, and $0.652$ once fragmentation is removed by
+restricting to the largest component. Note that this is \emph{not} a refutation
+of Paper~1: it uses a learned, regularised Laplacian on 7 stocks, not a
+thresholded 360-node network. The maximum-spectral-gap indicator of Kang et al.\
+\cite{kang2025} scores $0.526$ --- essentially chance --- but again on a
+different construction from theirs (fixed density, not distance filtration), so
+this is a caution to check, not a contradiction.
+\item \textbf{Everything above $0.75$ is one signal.} $\tau(t)$, the absorption
+ratio and the spectral entropy of $\Cmat$ are pairwise correlated at $|r| >
+0.99$; the isolated-node count correlates $0.92$ with $\tau$. They are all
+measuring market-mode dominance. This matters: the ``best'' indicators in the
+table are not four discoveries, they are one, and it is the oldest one in the
+finance literature \cite{kritzman2011,laloux1999}.
+\item \textbf{The modularity family is a genuinely different axis.}
+$\mu_1(\Bmat)$ correlates $0.025$ with the market-mode detector --- essentially
+orthogonal --- and $0.761$ with Louvain $Q$ in levels. So $\mu_1(\Bmat)$ is a
+deterministic proxy for what Louvain is trying to measure, without Louvain's
+$2\times$-the-signal seed jitter.
+\item \textbf{But orthogonality did not translate into out-of-sample gain.}
+Fitting a logistic detector on a pre-2002 training period and testing post-2002
+(27 sharp-crisis days in the test set): market mode alone $0.730$; adding
+$\mu_1(\Bmat)$ $0.629$; adding $Q$ $0.699$; adding $\mu_N(\Bmat)$ $0.719$.
+In-sample all of these \emph{improve} on the market mode ($0.812 \to
+0.822$--$0.831$), which is exactly the pattern you would expect from
+overfitting. \textbf{With 27 out-of-sample events, none of this is conclusive in
+either direction} --- it is a warning that the incremental-value claim needs a
+much larger event set (more markets, more assets, longer history) before it can
+be made.
+\end{enumerate}
+
+\paragraph{The detectability number.} Excluding the market mode, the mean count
+of correlation eigenvalues above the Marchenko--Pastur edge is $0.70$ (max 3,
+often 0) at $\Delta t = 30$, $N = 360$. This is the single most consequential
+preliminary number in this document: it says that at the window length used
+throughout this literature, the daily correlation matrix contains
+\emph{essentially no statistically resolvable group structure}, while the
+methods applied to it confidently report nine communities a day.
+
+\paragraph{Reproducibility.}\sloppy Everything in this section is in
+\texttt{reports/probe/}: three scripts (\texttt{spectral\_probe.py},
+\texttt{duality.py}, \texttt{incremental.py}), the per-day spectra
+(\texttt{spectral\_probe.parquet}, 6{,}315 rows $\times$ 15 columns) and the AUC
+tables as JSON. They import the replication's own \texttt{crisis\_dates},
+\texttt{construct} and scoring code unchanged --- the same pre-registered
+windows, the same 250-day trailing $z$-score --- so every number above is
+directly comparable to the replication's own. As a check on that claim, the
+probe's $Q(t)$ and $\tau(t)$ AUCs reproduce the replication's stored Phase-8
+values ($0.5380684370$ and $0.8071316467$) to machine precision, so the new
+spectral rows sit on exactly the same scoring protocol as the published ones. Runtime is about 6 minutes for the
+full spectral pass on one core.\par\fussy
+
+% =====================================================================
+\section{Part VI --- Decisions I would like your view on}
+\label{sec:questions}
+% =====================================================================
+
+\begin{enumerate}[label=\textbf{Q\arabic*.}]
+\item \textbf{Framing.} Is the duality framing (Eq.~\ref{eq:duality}) the right
+spine for the study, or would you prefer the plainer empirical comparison?
+\open{comment here}
+\item \textbf{Scope of the network construction.} Do we keep Paper~3's
+fixed-density thresholded networks as the substrate --- which makes everything
+directly comparable to the replication --- or move to the threshold-free
+RMT-corrected correlation modularity of MacMahon \& Garlaschelli
+\cite{macmahon2015}, which is more defensible but breaks comparability?
+My inclination is to do both and report the difference, since that difference is
+itself the ``beyond thresholding'' argument made concrete.
+\open{comment here}
+\item \textbf{Data.} The current universe is 360 NYSE survivors, 1987--2011, and
+carries a double survivorship filter (documented). For the incremental-value
+question we need more crisis events than 27 out-of-sample days. Options: extend
+to 2026; add other exchanges; use index-level rather than stock-level data.
+Which do you consider most defensible?
+\open{comment here}
+\item \textbf{Target venue.} The framing changes with the venue --- a physics
+venue (\emph{Phys.\ Rev.\ E}, \emph{Physica A}) wants the spectral/RMT result;
+a finance venue wants the indicator to beat the absorption ratio out of sample,
+which on current evidence it does not.
+\open{comment here}
+\item \textbf{Paper 2.} Carry TICC forward as a regime-model comparator, or park it?
+\open{comment here}
+\end{enumerate}
+
+% =====================================================================
+\section*{Appendix A --- Environment and reproduction}
+\addcontentsline{toc}{section}{Appendix A --- Environment and reproduction}
+% =====================================================================
+
+\begingroup\sloppy
+\begin{itemize}
+\item Repository: \texttt{Financial\_networks\_project}, branches
+\texttt{main}, \texttt{add-ticc-replication}, \texttt{add-silva-replication}.
+\item Interpreter for Paper 3: \texttt{/opt/anaconda3/bin/python} (3.12.4).
+\texttt{python-igraph} is a hard dependency (Louvain, exact clique number,
+betweenness, degree-preserving rewiring); the project \texttt{.venv} lacks
+\texttt{yfinance} and \texttt{pyarrow}.
+\item Every stochastic operation takes an explicit seed and logs it
+(\texttt{DATA\_SEED = 7}, \texttt{FIT\_SEED = 42}); null-model runs are
+bit-reproducible at any worker count.
+\item Full accounting lives in
+\texttt{paper1\_gmrf\_laplacian/dev\_log.md} (769 lines),
+\texttt{paper2\_ticc/CLAUDE.md},
+\texttt{paper3\_market\_modularity/PITFALLS.md} (26-item audit) and
+\texttt{paper3\_market\_modularity/results/REPLICATION\_REPORT.md}.
+\end{itemize}
+\endgroup
+
+% =====================================================================
+\begin{thebibliography}{99}
+\raggedright
+\addcontentsline{toc}{section}{References}
+
+\bibitem{bolla2015} M.~Bolla, B.~Bullins, S.~Chaturapruek, S.~Chen, K.~Friedl.
+\emph{Spectral properties of modularity matrices}.
+Linear Algebra and its Applications \textbf{473}, 359--376 (2015).
+
+\bibitem{cardoso2020} J.~V.~de M.~Cardoso, D.~P.~Palomar.
+\emph{Learning undirected graphs in financial markets}.
+54th Asilomar Conference on Signals, Systems and Computers (2020).
+\href{https://arxiv.org/abs/2005.09958}{arXiv:2005.09958}.
+
+\bibitem{cardoso2021} J.~V.~de M.~Cardoso, J.~Ying, D.~P.~Palomar.
+\emph{Algorithms for learning graphs in financial markets} (2020).
+\href{https://arxiv.org/abs/2012.15410}{arXiv:2012.15410}.
+
+\bibitem{chauhan2009} S.~Chauhan, M.~Girvan, E.~Ott.
+\emph{Spectral properties of networks with community structure}.
+Physical Review E \textbf{80}, 056114 (2009).
+
+\bibitem{fasino2014} D.~Fasino, F.~Tudisco.
+\emph{An algebraic analysis of the graph modularity}.
+SIAM Journal on Matrix Analysis and Applications \textbf{35}(3), 997--1018 (2014).
+\href{https://arxiv.org/abs/1310.3031}{arXiv:1310.3031}.
+
+\bibitem{fasino2016} D.~Fasino, F.~Tudisco.
+\emph{Generalized modularity matrices}.
+Linear Algebra and its Applications \textbf{502}, 327--345 (2016).
+\href{https://arxiv.org/abs/1502.01139}{arXiv:1502.01139}.
+
+\bibitem{fasino2018anti} D.~Fasino, F.~Tudisco.
+\emph{A modularity based spectral method for simultaneous community and
+anti-community detection} (2017).
+\href{https://arxiv.org/abs/1709.06887}{arXiv:1709.06887}.
+
+\bibitem{fenn2011} D.~J.~Fenn, M.~A.~Porter, S.~Williams, M.~McDonald,
+N.~F.~Johnson, N.~S.~Jones.
+\emph{Temporal evolution of financial-market correlations}.
+Physical Review E \textbf{84}, 026109 (2011).
+
+\bibitem{fiedler1973} M.~Fiedler.
+\emph{Algebraic connectivity of graphs}.
+Czechoslovak Mathematical Journal \textbf{23}(2), 298--305 (1973).
+
+\bibitem{hallac2017} D.~Hallac, S.~Vare, S.~Boyd, J.~Leskovec.
+\emph{Toeplitz inverse covariance-based clustering of multivariate time series data}.
+KDD 2017. \href{https://arxiv.org/abs/1706.03161}{arXiv:1706.03161}.
+
+\bibitem{kang2025} Z.~T.~Kang, P.~T.-W.~Yen, S.~A.~Cheong.
+\emph{Indicator from the graph Laplacian of stock market time series
+cross-sections can precisely determine the durations of market crashes}.
+PLOS ONE (2025). \href{https://doi.org/10.1371/journal.pone.0327391}{doi:10.1371/journal.pone.0327391}.
+
+\bibitem{krzakala2013} F.~Krzakala, C.~Moore, E.~Mossel, J.~Neeman, A.~Sly,
+L.~Zdeborov\'a, P.~Zhang.
+\emph{Spectral redemption in clustering sparse networks}.
+PNAS \textbf{110}(52), 20935--20940 (2013).
+
+\bibitem{kritzman2011} M.~Kritzman, Y.~Li, S.~Page, R.~Rigobon.
+\emph{Principal components as a measure of systemic risk}.
+The Journal of Portfolio Management \textbf{37}(4), 112--126 (2011).
+
+\bibitem{laloux1999} L.~Laloux, P.~Cizeau, J.-P.~Bouchaud, M.~Potters.
+\emph{Noise dressing of financial correlation matrices}.
+Physical Review Letters \textbf{83}, 1467--1470 (1999).
+
+\bibitem{lapenergy2023} \emph{Can financial crisis be detected? Laplacian energy measure}.
+The European Journal of Finance \textbf{29}(9), 1069--1086 (2023).
+\href{https://doi.org/10.1080/1351847X.2022.2091946}{doi:10.1080/1351847X.2022.2091946}.
+\textcolor{BadRed}{[Author list not yet verified from the published version --- do not cite as-is.]}
+
+\bibitem{lel2025} \emph{Can we better predict financial crisis? The role of
+Laplacian-energy-like measure}. International Review of Economics \& Finance (2025), article S1059-0560(25)00559-3.
+\textcolor{BadRed}{[Author list not yet verified from the published version --- do not cite as-is.]}
+
+\bibitem{macmahon2015} M.~MacMahon, D.~Garlaschelli.
+\emph{Community detection for correlation matrices}.
+Physical Review X \textbf{5}, 021006 (2015).
+\href{https://arxiv.org/abs/1311.1924}{arXiv:1311.1924}.
+
+\bibitem{mantegna1999} R.~N.~Mantegna.
+\emph{Hierarchical structure in financial markets}.
+The European Physical Journal B \textbf{11}, 193--197 (1999).
+
+\bibitem{masuda2025} N.~Masuda, Z.~M.~Boyd, D.~Garlaschelli, P.~J.~Mucha.
+\emph{Introduction to correlation networks: interdisciplinary approaches beyond
+thresholding}. Physics Reports \textbf{1136}, 1--39 (2025).
+\href{https://arxiv.org/abs/2311.09536}{arXiv:2311.09536}.
+
+\bibitem{mucha2010} P.~J.~Mucha, T.~Richardson, K.~Macon, M.~A.~Porter,
+J.-P.~Onnela.
+\emph{Community structure in time-dependent, multiscale, and multiplex networks}.
+Science \textbf{328}(5980), 876--878 (2010).
+
+\bibitem{nadakuditi2012} R.~R.~Nadakuditi, M.~E.~J.~Newman.
+\emph{Graph spectra and the detectability of community structure in networks}.
+Physical Review Letters \textbf{108}, 188701 (2012).
+\href{https://arxiv.org/abs/1205.1813}{arXiv:1205.1813}.
+
+\bibitem{newman2006pnas} M.~E.~J.~Newman.
+\emph{Modularity and community structure in networks}.
+PNAS \textbf{103}(23), 8577--8582 (2006).
+
+\bibitem{newman2006pre} M.~E.~J.~Newman.
+\emph{Finding community structure in networks using the eigenvectors of matrices}.
+Physical Review E \textbf{74}, 036104 (2006).
+\href{https://arxiv.org/abs/physics/0605087}{arXiv:physics/0605087}.
+
+\bibitem{peixoto2013} T.~P.~Peixoto.
+\emph{Eigenvalue spectra of modular networks}.
+Physical Review Letters \textbf{111}, 098701 (2013).
+\href{https://arxiv.org/abs/1306.2507}{arXiv:1306.2507}.
+
+\bibitem{plerou1999} V.~Plerou, P.~Gopikrishnan, B.~Rosenow, L.~A.~N.~Amaral,
+H.~E.~Stanley.
+\emph{Universal and nonuniversal properties of cross correlations in financial
+time series}. Physical Review Letters \textbf{83}, 1471--1474 (1999).
+
+\bibitem{saade2014} A.~Saade, F.~Krzakala, L.~Zdeborov\'a.
+\emph{Spectral clustering of graphs with the Bethe Hessian}.
+NIPS 2014, 406--414. \href{https://arxiv.org/abs/1406.1880}{arXiv:1406.1880}.
+
+\bibitem{sandhu2016} R.~S.~Sandhu, T.~T.~Georgiou, A.~R.~Tannenbaum.
+\emph{Ricci curvature: an economic indicator for market fragility and systemic risk}.
+Science Advances \textbf{2}(5), e1501495 (2016).
+
+\bibitem{sarkar2013} S.~Sarkar, J.~A.~Henderson, P.~A.~Robinson.
+\emph{Spectral characterization of hierarchical network modularity and limits of
+modularity detection}. PLOS ONE \textbf{8}(1), e54383 (2013).
+
+\bibitem{silva2015} F.~N.~Silva, C.~H.~Comin, T.~K.~DM.~Peron, F.~A.~Rodrigues,
+C.~Ye, R.~C.~Wilson, E.~Hancock, L.~da~F.~Costa.
+\emph{Modular dynamics of financial market networks} (2015).
+\href{https://arxiv.org/abs/1501.05040}{arXiv:1501.05040}.
+
+\bibitem{tumminello2005} M.~Tumminello, T.~Aste, T.~Di Matteo, R.~N.~Mantegna.
+\emph{A tool for filtering information in complex systems}.
+PNAS \textbf{102}(30), 10421--10426 (2005).
+
+\end{thebibliography}
+
+\end{document}

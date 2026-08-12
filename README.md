@@ -1,6 +1,6 @@
 # Financial Networks Project
 
-From-scratch replications of two papers on learning graph/network structure from multivariate
+From-scratch replications of three papers on learning graph/network structure from multivariate
 financial and time-series data. Each paper lives in its own self-contained folder with its own
 solver, experiments, tests, and a single results notebook.
 
@@ -12,8 +12,9 @@ protocol or data generation are recorded rather than absorbed into the headline 
 |--------|-------|--------|----------|
 | [`paper1_gmrf_laplacian/`](paper1_gmrf_laplacian/) | Cardoso & Palomar (2020), *Learning Undirected Graphs in Financial Markets* (`docs/2005.09958v4.pdf`) | GMRF graph-Laplacian (precision) estimation for clustering + a trading signal | `replication_notebook.ipynb` |
 | [`paper2_ticc/`](paper2_ticc/) | Hallac, Vare, Boyd & Leskovec (KDD 2017), *Toeplitz Inverse Covariance-Based Clustering of Multivariate Time Series Data* (`docs/1706.03161v2.pdf`) | Subsequence clustering via block-Toeplitz inverse-covariance MRFs + dynamic-programming segmentation | `replication_notebook.ipynb` |
+| [`paper3_market_modularity/`](paper3_market_modularity/) | Silva, Comin, Peron, Rodrigues, Ye, Wilson, Hancock & Costa (2015), *Modular Dynamics of Financial Market Networks* (`docs/1501.05040v3.pdf`) | Sliding-window correlation networks, Louvain communities, and a stochastic-blockmodel null that compresses the market to its community mixing matrix | `replication_notebook.ipynb` |
 
-Both paper PDFs are in [`docs/`](docs/).
+All three paper PDFs are in [`docs/`](docs/).
 
 ## Setup
 
@@ -65,5 +66,59 @@ cd paper2_ticc
 python -m pytest tests/
 python experiments/exp1_table1_f1.py       # Table 1
 python experiments/exp3_fig3_samples.py    # → figures/fig3_samples.png   (etc.)
+jupyter notebook replication_notebook.ipynb
+```
+
+## Paper 3 — Modular dynamics of financial market networks
+
+Builds a daily sequence of stock-correlation networks over 25 years, detects communities each day
+with Louvain, then discards everything except the community sizes and the inter-community mixing
+matrix and regenerates a random network from that summary alone. The claim is that this compressed
+description reproduces most of the real network's topology, and that during crises the market
+leaves a well-defined community structure for a much more uniform one.
+
+The replication is organised around a 26-item methodological audit of the paper
+([`PITFALLS.md`](paper3_market_modularity/PITFALLS.md)) as well as the reproduction itself. The
+highest-value item: every correlation the paper reports is computed on 30-day sliding windows that
+share 29/30 of their data, so ~200 effectively independent points are presented as 5,978. That
+correction, and the crisis-detection evaluation the paper's own flowchart promises but never
+performs, are the parts worth reading.
+
+**Replication status — complete, Phases 0–9.** N = 360 NYSE stocks x 6,345 trading
+days against the paper's 348 x 6,008; 6,315 daily networks, 132,615 graph evaluations.
+The paper's headline reproduces: the community null tracks real modularity at rho = 0.98
+(paper: 0.99). Across all 32 comparison cells the mean absolute difference from the
+paper's own table is 0.155 and the sign agrees on 97 %.
+
+Four findings the paper's own construction does not support:
+
+- **Modularity's level is not evidence.** Louvain on i.i.d.-noise networks scores
+  Q = 0.225 against the real market's 0.222, and reproduces 80 % of the market's
+  excess over its degree-sequence null. Thresholded correlation matrices are
+  transitive by construction, and no degree-based null controls for that.
+- **The community model wins on one measure only.** Normalized by the variance of
+  the real series, it beats the degree sequence on modularity — the quantity Pi
+  directly encodes — and loses on six of the other seven.
+- **The compression claim inverts during crises**, from cheaper on 69 % of all days
+  to 34 % of crisis days, because the network shatters into singleton communities.
+- **tau(t), which fixed-density thresholding discards, detects crises at AUC 0.807.
+  Modularity manages 0.538**, barely above chance.
+
+The audit's own central hypothesis — that correcting for 29/30 window overlap would
+collapse the evidence — is **not supported**: mean rho moves 0.783 to 0.777. That
+negative result is reported as prominently as the positive ones.
+
+Full accounting in [`PITFALLS.md`](paper3_market_modularity/PITFALLS.md) and
+[`results/REPLICATION_REPORT.md`](paper3_market_modularity/results/REPLICATION_REPORT.md).
+
+Requires `python-igraph` (Louvain, exact clique number, betweenness) and, on this machine, the
+`/opt/anaconda3` interpreter rather than `.venv`, which lacks `yfinance` and `pyarrow`.
+
+```bash
+cd paper3_market_modularity
+python -m pytest tests/
+python data/fetch_data.py                  # one-time price download (~10 min)
+python run_phases.py 1 9                   # everything (~25 min; Phase 5 is resumable)
+python experiments/exp6_scoring.py         # or one phase at a time
 jupyter notebook replication_notebook.ipynb
 ```

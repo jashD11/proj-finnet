@@ -1,0 +1,65 @@
+{
+  "market_mode only": {
+    "in_sample": 0.8122567070480146,
+    "oos_post2002": 0.729917280158614,
+    "features": [
+      "market_mode"
+    ]
+  },
+  "+ lambda_1(B)": {
+    "in_sample": 0.8220606575211611,
+    "oos_post2002": 0.6290933320332179,
+    "features": [
+      "market_mode",
+      "mod_lambda1"
+    ]
+  },
+  "+ lambda_min(B)": {
+    "in_sample": 0.8097978574004789,
+    "oos_post2002": 0.7193538426535355,
+    "features": [
+      "market_mode",
+      "mod_lambda_min"
+    ]
+  },
+  "+ Q_dyn (Louvain)": {
+    "in_sample": 0.8314872305903696,
+    "oos_post2002": 0.6988770253359985,
+    "features": [
+      "market_mode",
+      "q_dyn"
+    ]
+  },
+  "+ lambda_2(L) on LCC": {
+    "in_sample": 0.8095511862328006,
+    "oos_post2002": 0.700014626298084,
+    "features": [
+      "market_mode",
+      "lcc_lambda2"
+    ]
+  },
+  "market + all modularity spectrum": {
+    "in_sample": 0.8230198250895043,
+    "oos_post2002": 0.6404855930963873,
+    "features": [
+      "market_mode",
+      "mod_lambda1",
+      "mod_lambda_min"
+    ]
+  },
+  "modularity spectrum only": {
+    "in_sample": 0.8055002756624006,
+    "oos_post2002": 0.6846732647522468,
+    "features": [
+      "mod_lambda1",
+      "mod_lambda_min"
+    ]
+  },
+  "Q_dyn only": {
+    "in_sample": 0.5380684369991027,
+    "oos_post2002": 0.6667154209936131,
+    "features": [
+      "q_dyn"
+    ]
+  }
+}

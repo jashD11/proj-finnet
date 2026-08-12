@@ -1,0 +1,53 @@
+{
+  "n_windows": 6315,
+  "n_nodes": 360,
+  "n_replicates": 10,
+  "config_method": "rewire",
+  "rewire_sweeps": 5,
+  "n_graphs_generated": 126300,
+  "elapsed_sec": 194.4,
+  "real_edges_per_day": 6462,
+  "community_model": {
+    "edges_mean": 6462.156547901821,
+    "edges_rel_bias": 2.4225921049376893e-05,
+    "edges_rel_abs_max": 0.014221603218817602,
+    "edges_sd_mean": 70.43500824269816,
+    "frac_days_within_3pct": 1.0,
+    "q_planted_mean": 0.2214489172670522,
+    "q_planted_vs_real_mae": 0.0013911694644758847,
+    "q_planted_vs_real_max": 0.0073275323589209185,
+    "q_planted_vs_real_corr": 0.9991102717772005,
+    "q_louvain_mean": 0.22008907621238452,
+    "q_louvain_vs_real_corr": 0.9966578334174765
+  },
+  "configuration_model": {
+    "q_mean": 0.1065135908582616,
+    "q_sd_across_days": 0.014473799778552279,
+    "q_min": 0.04781174345824423,
+    "q_max": 0.1333178223264815,
+    "q_replicate_sd_mean": 0.0026278333909495796,
+    "degrees_preserved_frac": 1.0,
+    "edges_preserved_frac": 1.0,
+    "paper_noise_floor": 0.1
+  },
+  "real": {
+    "q_mean": 0.2215111640062499,
+    "q_sd": 0.04131962108157343
+  },
+  "stub_comparison": {
+    "n_days": 250,
+    "edge_loss_frac_mean": 0.1303831631073971,
+    "edge_loss_frac_max": 0.2216032188177035,
+    "q_stub_mean": 0.1217112071377824
+  },
+  "noise_excess": {
+    "n_days": 101,
+    "q_noise": 0.2252706371312259,
+    "q_noise_sd": 0.007074926449294413,
+    "q_noise_null": 0.13316981112859946,
+    "noise_transitivity": 0.21946129673302495,
+    "noise_excess": 0.09210082600262642,
+    "real_excess": 0.1149975731479883,
+    "frac_of_real_excess_explained": 0.8008936491564351
+  }
+}

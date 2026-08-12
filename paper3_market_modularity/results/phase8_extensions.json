@@ -1,0 +1,140 @@
+{
+  "baseline_days": 250,
+  "base_rate_sharp": 0.026761678543151226,
+  "base_rate_any": 0.310055423594616,
+  "detectors": {
+    "modularity": {
+      "sharp": {
+        "auc": 0.5380684369991027,
+        "f1": 0.11864406779661017,
+        "precision": 0.11351351351351352,
+        "recall": 0.1242603550295858,
+        "threshold": 2.105473768717365,
+        "n": 6190,
+        "base_rate": 0.02730210016155089
+      },
+      "any": {
+        "auc": 0.5311085006304415,
+        "f1": 0.4806087383406972,
+        "precision": 0.3163166397415186,
+        "recall": 1.0,
+        "threshold": -9.60869862532751,
+        "n": 6190,
+        "base_rate": 0.3163166397415186
+      },
+      "corr_with_sharp": 0.008201352967708873
+    },
+    "tau": {
+      "sharp": {
+        "auc": 0.8071316467315087,
+        "f1": 0.35074626865671643,
+        "precision": 0.47474747474747475,
+        "recall": 0.2781065088757396,
+        "threshold": 3.2812061844587608,
+        "n": 6190,
+        "base_rate": 0.02730210016155089
+      },
+      "any": {
+        "auc": 0.6063076014064736,
+        "f1": 0.5036753895912967,
+        "precision": 0.3536333608587944,
+        "recall": 0.8748723186925434,
+        "threshold": -0.8409201344141072,
+        "n": 6190,
+        "base_rate": 0.3163166397415186
+      },
+      "corr_with_sharp": 0.23658769480720668
+    },
+    "mean_correlation": {
+      "sharp": {
+        "auc": 0.8073154216651974,
+        "f1": 0.2890625,
+        "precision": 0.42528735632183906,
+        "recall": 0.21893491124260356,
+        "threshold": 3.4173469660664613,
+        "n": 6190,
+        "base_rate": 0.02730210016155089
+      },
+      "any": {
+        "auc": 0.5910875792396469,
+        "f1": 0.48590914940162144,
+        "precision": 0.32478926543953207,
+        "recall": 0.9642492339121552,
+        "threshold": -1.4616162433686326,
+        "n": 6190,
+        "base_rate": 0.3163166397415186
+      },
+      "corr_with_sharp": 0.23255097073481942
+    },
+    "isolated_nodes": {
+      "sharp": {
+        "auc": 0.7597422826812272,
+        "f1": 0.25396825396825395,
+        "precision": 0.273972602739726,
+        "recall": 0.23668639053254437,
+        "threshold": 3.4698135257246467,
+        "n": 6190,
+        "base_rate": 0.02730210016155089
+      },
+      "any": {
+        "auc": 0.6035638411364554,
+        "f1": 0.5185289957567185,
+        "precision": 0.3585680751173709,
+        "recall": 0.9361593462717058,
+        "threshold": -0.6048539028319692,
+        "n": 6190,
+        "base_rate": 0.3163166397415186
+      },
+      "corr_with_sharp": 0.18682691616833877
+    }
+  },
+  "best_detector_sharp": "mean_correlation",
+  "event_study": {
+    "modularity": {
+      "n_events": 17,
+      "pre_mean": 5.252062401541702e-16,
+      "onset_mean": -0.014532915296063768,
+      "post_mean": -0.49459462653202746,
+      "onset_minus_pre": -0.014532915296064278,
+      "post_minus_pre": -0.49459462653202796,
+      "frac_events_onset_below_pre": 0.5294117647058824
+    },
+    "tau": {
+      "n_events": 17,
+      "pre_mean": -4.465382312279124e-16,
+      "onset_mean": 1.735933816440975,
+      "post_mean": 3.3928448859535933,
+      "onset_minus_pre": 1.7359338164409754,
+      "post_minus_pre": 3.3928448859535942,
+      "frac_events_onset_below_pre": 0.29411764705882354
+    },
+    "mean_correlation": {
+      "n_events": 17,
+      "pre_mean": -4.105648283221658e-16,
+      "onset_mean": 1.554170576622929,
+      "post_mean": 3.166760039785574,
+      "onset_minus_pre": 1.5541705766229295,
+      "post_minus_pre": 3.1667600397855744,
+      "frac_events_onset_below_pre": 0.29411764705882354
+    },
+    "isolated_nodes": {
+      "n_events": 17,
+      "pre_mean": 1.5428834680452547e-17,
+      "onset_mean": 8.192904192138423,
+      "post_mean": 9.546578248144968,
+      "onset_minus_pre": 8.192904192138423,
+      "post_minus_pre": 9.546578248144968,
+      "frac_events_onset_below_pre": 0.29411764705882354
+    }
+  },
+  "louvain_stability": {
+    "n_days_sampled": 800,
+    "n_seeds": 10,
+    "nmi_within_day_mean": 0.5429842487817762,
+    "nmi_within_day_sd": 0.18859019323014767,
+    "nmi_consecutive_days_mean": 0.46349732364264057,
+    "nmi_consecutive_days_sd": 0.17087509551835842,
+    "gap": 0.07948692513913563,
+    "frac_days_seedspread_exceeds_daychange": 0.09875
+  }
+}

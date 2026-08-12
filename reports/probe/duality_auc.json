@@ -1,0 +1,14 @@
+{
+  "lcc_lambda2": {
+    "sign": "down",
+    "auc_sharp": 0.6522300154587151
+  },
+  "lcc_mod_lambda1": {
+    "sign": "up",
+    "auc_sharp": 0.6066882282818813
+  },
+  "lcc_frac": {
+    "sign": "down",
+    "auc_sharp": 0.7569001591078168
+  }
+}
