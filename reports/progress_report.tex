@@ -39,7 +39,7 @@
 
 \begin{center}
 {\large\textbf{Financial Networks Project: working notes}}\\[1mm]
-{\small Jash Dalal, last updated 12 August 2026. Newest entries at the bottom.}
+{\small Jash Dalal, last updated 19 August 2026. Newest entries at the bottom.}
 \end{center}
 
 \logday{5 July: Paper 1, learning a Laplacian from returns}
@@ -289,6 +289,23 @@ finance venue wants the indicator to beat the absorption ratio on unseen data,
 which on current evidence it does not.
 \item Carry TICC forward as a comparator, or park it?
 \end{enumerate}
+
+\logday{19 August: the exploration written up properly}
+
+The 12 August entries above are too compressed to follow, so the whole
+exploration is now written out in \texttt{reports/discrepancy\_explained.tex} and
+shared for comment. It builds every result up from the papers' own definitions:
+the three replications side by side, each observed discrepancy beside what would
+explain it, the one scoring apparatus everything is judged on, and the three
+directions in a single symmetric frame. 17 pages, eight diagrams,
+self-contained, Overleaf-ready; every number in it is re-derived from the stored
+artifacts by \texttt{reports/probe/check\_numbers.py}.
+
+Three figures quoted above are stated more carefully there. The $0.68$ and
+$0.025$ market-mode correlations hold on the $z$-scored detector series, not in
+levels (where they are $-0.819$ and $+0.294$); the AUC-$0.756$ row is the count
+of \emph{connected components}, not of isolated nodes; and the noise-control
+$\Q$ values come from two different runs and are not interchangeable.
 
 \logday{\textcolor{gray}{dd Month: next entry here}}
 
