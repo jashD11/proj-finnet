@@ -39,7 +39,7 @@
 
 \begin{center}
 {\large\textbf{Financial Networks Project: working notes}}\\[1mm]
-{\small Jash Dalal, last updated 19 August 2026. Newest entries at the bottom.}
+{\small Jash Dalal, last updated 8 September 2026. Newest entries at the bottom.}
 \end{center}
 
 \logday{5 July: Paper 1, learning a Laplacian from returns}
@@ -293,7 +293,7 @@ which on current evidence it does not.
 \logday{19 August: the exploration written up properly}
 
 The 12 August entries above are too compressed to follow, so the whole
-exploration is now written out in \texttt{reports/discrepancy\_explained.tex} and
+exploration is now written out in \texttt{reports/2026-08-19\_discrepancy\_explained.tex} and
 shared for comment. It builds every result up from the papers' own definitions:
 the three replications side by side, each observed discrepancy beside what would
 explain it, the one scoring apparatus everything is judged on, and the three
@@ -306,6 +306,89 @@ $0.025$ market-mode correlations hold on the $z$-scored detector series, not in
 levels (where they are $-0.819$ and $+0.294$); the AUC-$0.756$ row is the count
 of \emph{connected components}, not of isolated nodes; and the noise-control
 $\Q$ values come from two different runs and are not interchangeable.
+
+\logday{31 August: the meeting, and the question set}
+
+Asked to take the modularity matrix seriously as a source of crisis indicators:
+find a quantity derived from $\Bmat$ that carries the same information as
+$\lambda_2(\Lap)$, tested on Paper 1's own FAAMUNG data, so the two can be
+declared equivalent and a theory framework built on top. Not necessarily a
+second-smallest eigenvalue, anything at all. Scope agreed: an empirical menu, Paper 1's
+dataset only, no Paper 3 scoring.
+
+Also raised at the meeting: the $\lambda_2(\Lap) + \mu_1(\Bmat) = d$ spine
+proposed as D1/D2 on 12 August holds only when \emph{every} degree equals $d$.
+Substituting a mean degree is not a weakened hypothesis, it is no hypothesis.
+\textbf{The 12 August framing of D2 is retracted}; the quantitative confirmation is
+in the next entry.
+
+\logday{31 August to 7 September: a modularity equivalent of the Fiedler value}
+
+Paper 1 throws the learned graphs away after reading $\lambda_2$ off them, so
+Algorithm 2 was re-run with its exact constants to recover all 243 Laplacians,
+$\Amat_t = -\operatorname{offdiag}(\Lap_t)$ recovered from each, and 22
+modularity-derived quantities scored against 6 Laplacian references. Gates first:
+recomputed $\lambda_2$ matches the cached series to $1.2\times10^{-10}$, and the
+backtest reproduces the published $S1 = +0.078$ against $S2 = -0.011$.
+
+\textbf{The question dissolves under normalisation.} Writing
+$\mathbf{u} = \mathbf{D}^{1/2}\mathbf{1}/\sqrt{2m}$, the normalised modularity
+matrix is $\mathbf{D}^{-1/2}\Bmat\mathbf{D}^{-1/2} =
+\mathbf{I} - \Lap_{\mathrm{sym}} - \mathbf{u}\mathbf{u}^{\!\top}$, and $\mathbf{u}$
+is $\Lap_{\mathrm{sym}}$'s own null vector. The two normalised matrices are the
+same operator: eigenvalues paired one-to-one by $\mu = 1-\lambda$ (full spectrum,
+all 243 windows, $1.8\times10^{-15}$) and eigenvectors shared to $1.000000$. So no
+normalised-$\Bmat$ indicator can be new; it is a Laplacian indicator in different
+notation. Unnormalised, the two do \emph{not} share a basis (overlap $0.871$; on
+some windows the Fiedler vector and $\Bmat$'s leading mode are nearly orthogonal,
+$0.039$), so that is where anything new must live.
+
+\textbf{The best-scoring candidate was the spurious one.} $\bar{d}-\mu_1(\Bmat)$
+reproduced 91\% of $\lambda_2$'s daily invest/cash calls, and it is exactly the
+$\bar d$ substitution flagged at the meeting. Whole-spectrum error $1.25$, i.e.\
+$5.3\times$ $\lambda_2$'s own sd; residual sd $0.208$, \textbf{89\% of $\lambda_2$'s
+sd}; only 40\% of the proxy's variance is $\lambda_2$; and the residual is
+\emph{smaller} in-crash ($0.308$ vs $0.512$), so the error term was doing some of
+the detecting. Degree CV here is $0.305$, nowhere near regular. The $\bar d$ term
+also does no work: controlling for it, $\mu_1(\Bmat)$ alone gives $-0.851$ against
+the proxy's $+0.851$.
+
+\textbf{Correlation was the wrong screen.} It was the working comparison metric
+between $\Bmat$ and $\Lap$, and it fails both ways. It promoted the spurious
+candidate above; and spectral entropy of the normalised $\Bmat$ correlates only
+$-0.264$ with $\lambda_2$, which looks independent, yet rebuilds from the
+$\Lap_{\mathrm{sym}}$ spectrum alone to $8.0\times10^{-15}$. Novelty has to mean
+\emph{not reconstructible from} $\operatorname{spec}(\Lap)$, not \emph{decorrelated
+from} $\lambda_2$.
+
+\textbf{$\lambda_2$ is itself inside the noise band on Paper 1's own setup.} Seven
+stocks, 243 windows, one event, 24 crash days. Raw-level COVID AUC is
+$\mathbf{0.472}$, below chance; only a strictly-prior $z$-score lifts it to
+$0.759$. It clears a bootstrap over days (CI $[0.634,0.875]$) but fails the harder
+null: sliding a 24-day window anywhere in the series puts COVID at the
+\textbf{76th percentile, $p = 0.243$}. A random gate at the same invest rate beats
+buy-and-hold 39.2\% of the time, so $\sim$11 of 28 candidates were expected to beat
+$S1$ by luck; 5 did, none with $p < 0.115$. No multiplicity correction exists
+anywhere in this study.
+
+\textbf{What survives, and it reframes the project.} $\lambda_2$ is read off the
+\emph{unnormalised} $\Lap$, so it is a blend: $d_{\min}\lambda_2(\Lap_{\mathrm{sym}})
+\le \lambda_2(\Lap) \le d_{\max}\lambda_2(\Lap_{\mathrm{sym}})$ holds on 243/243
+windows. Splitting the detection: structure alone $0.700$, scale alone $0.537$ (a
+coin flip), the two combined $0.759$. \textbf{Degree information is a modifier, not
+a signal}: worthless alone, but it improves the signal when mixed in, and it is
+exactly what normalisation destroys. $\Lap$ combines it additively on the diagonal;
+$\Bmat$ combines it through a random-rewiring null. That difference is the only
+thing $\Bmat$ offers, and it is the question worth taking forward. It also explains
+rather than merely observes why $\mu_N(\Bmat)$ keeps winning: $z$-AUC $0.775$ here
+against $\lambda_2$'s $0.759$, redundancy only $0.51$, and independently the best
+modularity signal in \texttt{reports/probe/} ($0.760$ vs $0.617$ over 17 crises).
+Not significant on one event ($\Delta$AUC $+0.015$, CI $[-0.115,+0.148]$, and
+$\mu_N$ fails the same sliding null at $p = 0.345$), so it is a lead, not a result.
+
+Written up in full in \texttt{reports/2026-09-08\_modularity\_equivalence.tex}
+(10 pages);
+code and the number-checking script in \texttt{modularity\_indicator/}.
 
 \logday{\textcolor{gray}{dd Month: next entry here}}
 
@@ -322,8 +405,10 @@ review); Kang et al.\ 2025 (largest Laplacian gap).
 \textcolor{BadRed}{Two Laplacian-energy papers (Eur.\ J.\ Finance 29(9) 2023;
 Int.\ Rev.\ Econ.\ Finance 2025) have unverified author lists, do not cite
 as-is.}
-In this repo: \texttt{reports/EXPLORATION\_EXPLAINED.md} for the ground-up
-version of all of the above, \texttt{reports/probe/} for code and outputs.
+In this repo: \texttt{reports/archive/EXPLORATION\_EXPLAINED.md} for the ground-up
+version of all of the above, \texttt{reports/probe/} for code and outputs,
+\texttt{modularity\_indicator/} for the 31 August to 7 September work and
+\texttt{reports/2026-09-08\_modularity\_equivalence.tex} for its write-up.
 Paper 3 needs \texttt{/opt/anaconda3/bin/python} and \texttt{python-igraph}.
 \par}
 
