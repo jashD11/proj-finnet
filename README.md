@@ -122,3 +122,38 @@ python run_phases.py 1 9                   # everything (~25 min; Phase 5 is res
 python experiments/exp6_scoring.py         # or one phase at a time
 jupyter notebook replication_notebook.ipynb
 ```
+
+## Original research on top of the replications
+
+Since 12 August 2026 the project has been building an original comparison on top of
+the three rebuilds: the **graph Laplacian** `L = D − A` and the **modularity matrix**
+`B = A − ddᵀ/2m` are the operators behind the two crisis indicators in this
+literature (Paper 1's Fiedler value `λ₂(L)` and Paper 3's modularity `Q`), and the
+question is what their spectra actually encode.
+
+| Folder | What it holds |
+|--------|---------------|
+| [`reports/`](reports/) | Write-ups for supervision, plus `probe/`, the spectral evidence over Paper 3's full 6,315-day network sequence. Start with [`reports/README.md`](reports/README.md). |
+| [`modularity_indicator/`](modularity_indicator/) | The 31 Aug to 7 Sep study asking whether `B` yields an equivalent of the Fiedler value, tested on Paper 1's FAAMUNG data. |
+
+**Where it stands.** Two results, one from each direction:
+
+- **The modularity matrix beats the modularity scalar.** On Paper 3's networks and
+  its own detector, Louvain's `Q(t)` scores AUC 0.538 against a 0.50 coin flip, while
+  three readings of the matrix `Q` is derived from reach 0.72 to 0.76. The
+  information was in `B` all along and the Louvain step is where it is lost.
+- **`B` and `L` are the same operator up to degree normalisation, and that closes the
+  obvious route.** Normalised, `B_n = I − L_sym − uuᵀ` with shared eigenvectors and
+  eigenvalues paired as `μ = 1 − λ`, verified to 1.8e-15, so no normalised-`B`
+  indicator can carry anything new. The unnormalised shortcut that appeared to work
+  requires a regular graph and does not hold here. What survives is that `λ₂` blends
+  structure with degree, and the two matrices differ only in how they combine them.
+
+Both findings are negative or deflationary about the incumbent indicators, including
+Paper 1's own: under its published setup, `λ₂` does not separate the COVID window
+from an arbitrary volatile stretch of the same series (`p = 0.243`). The write-ups
+say so plainly rather than reporting the favourable framing.
+
+The current report is
+[`reports/2026-09-08_modularity_equivalence.tex`](reports/2026-09-08_modularity_equivalence.tex);
+[`reports/progress_report.tex`](reports/progress_report.tex) is the running log.
