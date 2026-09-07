@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Verify every number quoted in reports/discrepancy_explained.tex.
+"""Verify every number quoted in reports/2026-08-19_discrepancy_explained.tex.
 
 Each check does two things:
 
@@ -29,7 +29,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 PROBE = ROOT / "reports" / "probe"
 PAPER3 = ROOT / "paper3_market_modularity"
-TEX = ROOT / "reports" / "discrepancy_explained.tex"
+TEX = ROOT / "reports" / "2026-08-19_discrepancy_explained.tex"
 
 N_STOCKS = 360
 DELTA_T = 30

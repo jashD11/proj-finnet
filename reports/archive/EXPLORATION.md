@@ -1,5 +1,12 @@
 # Exploration: Laplacian vs. modularity spectra
 
+> **Archived 8 September 2026.** Superseded by
+> `reports/2026-08-19_discrepancy_explained.tex`, which builds the same
+> argument up from the papers' own definitions. Kept for the plain-language
+> framing. Note that its λ₂(L) + μ₁(B) = d spine is now retracted: that
+> identity needs a regular graph, see §4 of
+> `reports/2026-09-08_modularity_equivalence.tex`.
+
 **12 August 2026.** Plain-language account of the exploration that produced
 `progress_report.tex`. Same content, no LaTeX and no equations — this is the
 version to read first. Every number here is reproduced by the scripts in

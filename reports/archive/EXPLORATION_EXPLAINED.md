@@ -1,5 +1,12 @@
 # Exploration, explained from scratch
 
+> **Archived 8 September 2026.** Superseded by
+> `reports/2026-08-19_discrepancy_explained.tex`, the written-up version of
+> the same material. Kept as the ground-up explanation of each object. Note
+> that its λ₂(L) + μ₁(B) = d spine is now retracted: that identity needs a
+> regular graph, see §4 of
+> `reports/2026-09-08_modularity_equivalence.tex`.
+
 **12 August 2026.** Ground-up companion to `EXPLORATION.md` and
 `progress_report.tex`. Every object and every number is defined before it is
 used. Nothing here is new evidence — it is the same probe results, explained for
