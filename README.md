@@ -77,13 +77,24 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt        # or requirements-lock.txt for exact versions
 ```
 
-Tests first; all three suites finish in under five seconds.
+Tests first; all three suites together finish in under five seconds.
+
+```bash
+./run_tests.sh            # all three, one command
+```
+
+Or individually:
 
 ```bash
 python paper1_gmrf_laplacian/tests/test_solver.py   # 4 assertion checks, ~0.6 s
-python -m pytest paper2_ticc/tests/                 #  3 tests, ~3.6 s
-python -m pytest paper3_market_modularity/tests/    # 48 tests, ~1.3 s
+cd paper2_ticc && python -m pytest tests/ -q        #  3 tests, ~2.1 s
+cd paper3_market_modularity && python -m pytest tests/ -q   # 48 tests, ~0.9 s
 ```
+
+A single root-level `pytest` does **not** work, and that is structural rather than a
+bug: each paper folder is self-contained and they have identically named
+subpackages (`solver/`, `utils/`, `tests/`, `data/`), so whichever is imported first
+shadows the others. `run_tests.sh` runs them as three processes.
 
 Which script regenerates which artifact:
 
