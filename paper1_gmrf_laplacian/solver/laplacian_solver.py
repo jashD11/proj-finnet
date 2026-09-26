@@ -1,5 +1,15 @@
 """
-GMRF Laplacian solver via gradient descent on edge weights.
+GMRF Laplacian solver: L-BFGS-B on an edge-weight parameterisation.
+
+NOT ADMM, despite this file's original name (`admm_graph.py`, kept in the git
+history). ADMM was the planned approach and was dropped at design stage for two
+reasons: the L-update has no closed form under `-log gdet(L)`, so ADMM becomes a
+two-level loop with an iterative inner solver; and the Z-update is not a true
+projection, because the four Laplacian-cone constraints (symmetry, zero row sums,
+non-positive off-diagonals, PSD) interact -- zeroing off-diagonals after the PSD
+step destroys PSD. The edge-weight parameterisation below removes all four
+constraints algebraically instead, leaving a box-constrained problem that
+L-BFGS-B handles directly.
 
 Solves Problem 1 (base) and Problem 10 (Algorithm 1 L-step):
     min_w  (q + β)ᵀw - log gdet(L(w))  [+ degree penalty if requested]

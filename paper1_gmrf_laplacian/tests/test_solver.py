@@ -14,7 +14,7 @@ import pathlib
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-from solver.admm_graph import learn_laplacian
+from solver.laplacian_solver import learn_laplacian
 
 
 def _path_laplacian(p):

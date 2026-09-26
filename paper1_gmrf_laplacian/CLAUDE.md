@@ -43,7 +43,7 @@ subject to   L1 = 0,  L_ij = L_ji <= 0  (i != j),  L >= 0 (PSD)
 - `S` = similarity matrix (sample **correlation** by default, see guidelines).
 - `gdet(L)` = **pseudo-determinant** = product of the *positive* eigenvalues of L (L is singular, so plain det = 0).
 - `h_α(L)` = regularizer (sparsity). β is its hyperparameter.
-- Solve with **ADMM** or **MM** — NOT cvxpy (log gdet doesn't scale, not DCP-compliant).
+- Solved with **L-BFGS-B on an edge-weight parameterisation** (§6) — NOT cvxpy (log gdet doesn't scale, not DCP-compliant), and NOT ADMM (see §6 for why that was dropped).
 
 ### Laplacian properties to verify (P1, P2)
 - **P1:** `L1 = 0` → graph-mean zero, null space contains the all-ones vector.
@@ -103,7 +103,7 @@ Financial_networks_project/
 │   └── tickers.py             # ticker lists (107 requested → 97 usable, + FAAMUNG)
 │
 ├── solver/
-│   ├── admm_graph.py          # THE ENGINE: GMRF Laplacian ADMM solver (Problem 1 / 10)
+│   ├── laplacian_solver.py    # THE ENGINE: GMRF Laplacian solver, L-BFGS-B (Problem 1 / 10)
 │   ├── algorithm1.py          # k-component wrapper (alternating V-step + L-step)
 │   ├── algorithm2.py          # time-varying rolling wrapper around algorithm1
 │   └── sgl_benchmark.py       # SGL [Kumar 2016] baseline for Fig 2 comparison
@@ -141,7 +141,7 @@ Financial_networks_project/
 - `*.csv` — cached log-return matrices. Inputs to every experiment.
 
 **solver/** — the heart of the project
-- `admm_graph.py` — implements Problem 1 / Problem 10: convex GMRF Laplacian estimation via ADMM. Signature: `learn_laplacian(S, beta, max_iter, tol) -> L`. **Build and verify this before anything else.**
+- `laplacian_solver.py` — implements Problem 1 / Problem 10: GMRF Laplacian estimation by **L-BFGS-B over non-negative edge weights**, `L(w) = Kᵀdiag(w)K` (§6). Signature: `learn_laplacian(S, beta, max_iter, tol) -> L`. Was named `admm_graph.py`; it never implemented ADMM. **Build and verify this before anything else.**
 - `algorithm1.py` — wraps the solver in the alternating V-step/L-step loop to produce k-component graphs (Fig 2's proposed method).
 - `algorithm2.py` — wraps algorithm1 in a causal rolling window with the δ temporal penalty (Fig 3).
 - `sgl_benchmark.py` — the SGL baseline (spectral constraints, NO degree control) so Fig 2 can show the isolated-node failure mode.
@@ -173,7 +173,7 @@ Financial_networks_project/
 ## 5. Build order (dependency-driven)
 
 1. `requirements.txt` + `data/tickers.py` + `data/fetch_data.py` → run it → CSVs exist.
-2. `solver/admm_graph.py` → `tests/test_solver.py` → **must pass.**
+2. `solver/laplacian_solver.py` → `tests/test_solver.py` → **must pass.**
 3. `utils/` (preprocessing, metrics, viz).
 4. `solver/algorithm1.py` + `solver/sgl_benchmark.py`.
 5. `exp3` + `exp4` (FAAMUNG — small, fast, vivid). Needs `algorithm2.py`.
@@ -182,13 +182,33 @@ Financial_networks_project/
 
 ---
 
-## 6. Solver strategy note
+## 6. Solver strategy: why not ADMM
 
-The inner GMRF ADMM is the only hard part. Two viable paths:
-- **(A) Implement ADMM in Python from scratch** (~100–150 lines). Reference: Zhao et al. 2019 [ref 4] and Boyd et al. ADMM monograph [ref 14]. Preferred — keeps it pure-Python, no R dependency.
-- **(B) Port the authors' R package** (`fingraph` / `spectralGraphTopology`) logic. Use only as a cross-check reference if (A) misbehaves.
+**Decided at design stage, before any solver was written.** ADMM was the plan
+(Zhao et al. 2019; Boyd et al.). It was dropped for two structural reasons, not
+because a measured run diverged — no ADMM implementation was ever benchmarked here,
+and no timing or iteration log exists:
 
-Default to (A). If convergence is unstable, the usual culprits are the PSD projection step and the non-positivity projection on off-diagonals — debug those first.
+1. **The L-update has no closed form.** `−log gdet(L)` makes it a structured
+   eigenvalue problem, so it needs its own iterative inner solver. ADMM becomes a
+   two-level loop.
+2. **The Z-update is not a true projection.** The Laplacian cone requires symmetry,
+   zero row sums, non-positive off-diagonals and PSD *simultaneously*, and these
+   interact: zeroing off-diagonals after the PSD step changes the eigenvalues, so the
+   result is no longer PSD. Alternating to convergence works but adds a second inner
+   loop.
+
+**What is implemented instead.** The edge-weight parameterisation
+`L(w) = Kᵀdiag(w)K`, with `K` the signed incidence matrix of the complete graph on
+`p` nodes and `w ≥ 0`. This makes `L1 = 0`, `L_ij ≤ 0` for `i≠j` and `L ⪰ 0` hold
+*by construction*, so all four constraints vanish and what remains is a box
+constraint on `m = p(p−1)/2` variables — solved directly by `scipy.optimize.minimize`
+with `method="L-BFGS-B"`. See `solver/laplacian_solver.py`.
+
+**Cost of the choice.** `w_ij = 0 ∀j` drives `log gdet → −∞`, so no node can reach
+zero degree. The SGL baseline therefore cannot produce true isolated nodes, and the
+paper's Fig 2 failure mode shows up as a draw-threshold artifact instead (deviation
+D3, §9).
 
 ---
 
@@ -197,7 +217,7 @@ Default to (A). If convergence is unstable, the usual culprits are the PSD proje
 - [x] requirements.txt
 - [x] data/tickers.py
 - [x] data/fetch_data.py + CSVs generated
-- [x] solver/admm_graph.py
+- [x] solver/laplacian_solver.py
 - [x] tests/test_solver.py PASSING
 - [x] utils/preprocessing.py
 - [x] utils/graph_metrics.py

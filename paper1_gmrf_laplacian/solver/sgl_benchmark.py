@@ -11,7 +11,7 @@ and beta=10 (same β as Algorithm 1 per the paper).
 """
 
 import numpy as np
-from solver.admm_graph import learn_laplacian
+from solver.laplacian_solver import learn_laplacian
 
 
 def sgl(S, beta=10.0, max_iter=1000, tol=1e-6):
