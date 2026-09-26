@@ -103,13 +103,14 @@ and the replication's phase results, *and* confirms each printed string occurs i
 source, so the prose cannot drift from the data in either direction. It exits
 non-zero on any mismatch.
 
-### Known gap in the bibliography
+### Bibliography note
 
-Two entries, the *European Journal of Finance* Laplacian-energy paper and the
-*International Review of Economics & Finance* Laplacian-energy-like paper, are cited
-by title and DOI because the publishers block automated access to their author lists.
-They are marked in red and **must not be cited as-is**; fill the author lists from
-the published versions before the document goes anywhere beyond supervision.
+The two Laplacian-energy entries (*European Journal of Finance* 2023;
+*International Review of Economics & Finance* 2025) were **removed on 27 September
+2026** pending verification of their author lists, which the publishers block
+automated access to. Nothing in the document depended on them. The outside-reference
+list is a working set of pointers, recorded mostly from abstracts and stated main
+results; no number in the report rests on any of them.
 
 ## `archive/` — superseded material
 
