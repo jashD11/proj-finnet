@@ -2,7 +2,9 @@
 
 *Modular Dynamics of Financial Market Networks*, arXiv:1501.05040v3 · `docs/1501.05040v3.pdf`
 
-26 pitfalls identified in a close read of the paper, recorded before implementation began.
+34 items: **33 pitfalls identified in a close read of the paper, recorded before implementation
+began**, plus **B7**, which the build itself turned up in Phase 3 and which is marked `(new, P3)` in
+the table below.
 
 **Labels.** **[EASY]** = a mechanical check or correction; the answer arrives within an hour of coding. **[THINK]** = a design question with no obvious right answer, where the fix changes what the paper is measuring.
 

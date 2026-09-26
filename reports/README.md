@@ -130,7 +130,7 @@ they are directly comparable to the replication's published AUCs.
 | `duality.py` | Tests the regular-graph identity `λ₂(L) + μ₁(B) = d`; recomputes the Fiedler value on the largest connected component to remove the fragmentation confound. ~6 min. |
 | `incremental.py` | Asks whether modularity-spectrum signals add anything to the market mode, in-sample and on a strict pre/post-2002 chronological split. Seconds. |
 | `check_numbers.py` | Re-derives every number quoted in the 19 August report. |
-| `spectral_probe.parquet` | Per-day spectra, 6,315 × 15. Written by the first two scripts. |
+| `spectral_probe.parquet` | Per-day spectra, 6,315 × 16. Written by the first two scripts. |
 | `*_auc.json` | The scored results. |
 
 ```bash

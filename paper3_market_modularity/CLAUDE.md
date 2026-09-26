@@ -11,7 +11,8 @@ Source of truth for the replication. Read §1–§4 plus the section for the pha
 you are working on. Tick §8's checklist after each phase. Companion docs:
 
 - `PLAN.md` — the approved phase-by-phase build plan.
-- `PITFALLS.md` — the 26-item methodological audit (A1–E11) this replication is organised around.
+- `PITFALLS.md` — the 34-item methodological audit (A1–E11) this replication is organised around
+  (33 pre-registered before implementation, plus B7 found during Phase 3).
 - `data/UNIVERSE.md` — generated; the realized universe and every difference from the paper's.
 - `results/REPLICATION_REPORT.md` — generated; claim-by-claim paper vs. us.
 

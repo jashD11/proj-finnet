@@ -73,7 +73,7 @@ replication_notebook.ipynb single notebook rendering all four results
 | Result | Paper | This impl | Status |
 |--------|-------|-----------|--------|
 | Table 1 TICC macro-F1 (4 seqs) | 0.90–0.98, avg 0.95 | ~0.99 avg | reproduced |
-| Table 1 `TICC, β=0` | 0.86–0.89, avg 0.88 | 0.68–0.94, avg 0.80 | **not reproduced** |
+| Table 1 `TICC, β=0` | 0.86–0.89, avg 0.88 | 0.68–0.94, avg **0.8024** (committed run, `DATA_SEED = 7`, `results/table1_f1.json`); **0.75** as a 5-seed mean under the paper's `100·K` protocol (§5.1) | **not reproduced** |
 | Table 1 GMM (best baseline) | avg 0.67 | avg ~0.84 | inflated by `SEG_LEN` |
 | Table 1 distance-based | low | low, same ordering | reproduced |
 | Table 2 network recovery F1 | 0.79–0.90, avg 0.85 | 0.75–0.85, avg 0.80 | **partial** (below band) |
@@ -126,7 +126,9 @@ Readings:
 
 **Genuine non-reproductions**
 
-- **`TICC, β=0` is systematically too weak** (avg 0.75 vs the paper's 0.88, σ ≈ 0.04–0.08). Because
+- **`TICC, β=0` is systematically too weak** — 0.75 as a 5-seed mean under the paper's `100·K`
+  protocol (§5.1), against the paper's 0.88, σ ≈ 0.04–0.08. The committed single-seed run
+  (`results/table1_f1.json`) reads 0.8024; both are below the paper either way. Because
   our β=0 is too low, this replication **overstates** the contribution of the temporal-consistency
   penalty — the one place our error points away from the paper's own conclusion.
 - **Fig 3's `β=0` curve is flat** at 0.66–0.71 across 100→500 samples. The paper reports it rising

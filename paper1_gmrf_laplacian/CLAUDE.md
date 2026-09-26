@@ -21,8 +21,8 @@ Replicate the paper's 4 experiments. The paper learns **graph Laplacian matrices
 
 | Fig | Experiment | Data | Core method |
 |-----|-----------|------|-------------|
-| Fig 1 | Preprocessing effects | 130 S&P500 stocks (3 sectors) | CLR two-stage [Nie 2016] |
-| Fig 2 | Degree control / k-component | same 130 stocks | Algorithm 1 (proposed) vs SGL |
+| Fig 1 | Preprocessing effects | 97 S&P500 stocks (3 sectors) | CLR two-stage [Nie 2016] |
+| Fig 2 | Degree control / k-component | same 97 stocks | Algorithm 1 (proposed) vs SGL |
 | Fig 3 | Time-varying graphs | FAAMUNG (7 stocks) | Algorithm 2 (rolling Algorithm 1) |
 | Fig 4 | Trading strategy | FAAMUNG (7 stocks) | algebraic connectivity signal |
 
@@ -98,9 +98,9 @@ Financial_networks_project/
 │
 ├── data/
 │   ├── fetch_data.py          # one-time yfinance pull → CSVs. Run once.
-│   ├── sp500_3sectors.csv     # cached: 130 stocks, 2016-2019 log returns
+│   ├── sp500_3sectors.csv     # cached: 97 stocks, 2016-2019 log returns
 │   ├── faamung.csv            # cached: 7 stocks, 2019-2020 log returns
-│   └── tickers.py             # ticker lists (the 130 universe + FAAMUNG)
+│   └── tickers.py             # ticker lists (107 requested → 97 usable, + FAAMUNG)
 │
 ├── solver/
 │   ├── admm_graph.py          # THE ENGINE: GMRF Laplacian ADMM solver (Problem 1 / 10)
@@ -137,7 +137,7 @@ Financial_networks_project/
 
 **data/**
 - `fetch_data.py` — pulls prices from yfinance, computes log returns, writes the two CSVs. **Run once, then never again** (caches to CSV so experiments don't re-hit the network or burn tokens re-fetching).
-- `tickers.py` — hardcoded ticker lists. The 130-stock S&P500 universe (Industrials + Consumer Staples + Energy, as of ~2016) and FAAMUNG = `[META, AAPL, AMZN, MSFT, UBER, NFLX, GOOGL]`. (Note: FB→META; the paper's 2020 "Facebook" is today's META ticker.)
+- `tickers.py` — hardcoded ticker lists. **107 tickers** across three sectors (Industrials 55 + Consumer Staples 32 + Energy 20, ~2016 membership), reconstructing the paper's unlisted ~130-name universe; delisted names drop out at fetch time, leaving the **97 columns** in `data/sp500_3sectors.csv`. Plus FAAMUNG = `[META, AAPL, AMZN, MSFT, UBER, NFLX, GOOGL]`. (Note: FB→META; the paper's 2020 "Facebook" is today's META ticker.)
 - `*.csv` — cached log-return matrices. Inputs to every experiment.
 
 **solver/** — the heart of the project
