@@ -4,7 +4,7 @@ Three network-inference papers rebuilt from scratch on real market data, then us
 whether the crisis indicators they propose actually carry a signal.
 
 Summer Undergraduate Research Programme 2026, supervised by Prof. Rajasekhar Anguluri.
-11,607 lines of Python across 70 files, 51 tests, three replications and one original study.
+11,623 lines of Python across 70 files, 51 tests, three replications and one original study.
 
 The short version: the papers' mechanisms mostly reproduce, and their indicators mostly do not
 survive the null models the papers omit. Those negative results are the substance of the work
