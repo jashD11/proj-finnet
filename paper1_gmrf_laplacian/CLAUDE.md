@@ -134,6 +134,9 @@ Financial_networks_project/
 - `CLAUDE.md` — you're reading it. Project memory.
 - `requirements.txt` — `numpy scipy pandas yfinance matplotlib networkx scikit-learn`. Pin versions once it runs.
 - `README.md` — optional one-paragraph human summary + how to run.
+- `ENGINEERING_NOTES.md` — the solver's hard parts: why ADMM was dropped, the
+  edge-weight parameterisation, four numerical traps, and the temporal-penalty sign
+  bug with its before/after numbers. Distilled from `dev_log.md` (untracked).
 
 **data/**
 - `fetch_data.py` — pulls prices from yfinance, computes log returns, writes the two CSVs. **Run once, then never again** (caches to CSV so experiments don't re-hit the network or burn tokens re-fetching).
