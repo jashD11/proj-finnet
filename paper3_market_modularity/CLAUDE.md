@@ -107,6 +107,11 @@ only their measures are persisted.
   null-model generation and layouts.
 - **Plots:** `matplotlib.use("Agg")`, save to `figures/`, `dpi=130`,
   `plt.close("all")`, never `plt.show()` in a script.
+- **`exp9_report.py` rebuilds `replication_notebook.ipynb` from scratch, without
+  stored outputs.** The committed notebook keeps its outputs so it renders on
+  GitHub, so after running Phase 9 re-execute it and rebuild the HTML:
+  `jupyter nbconvert --to notebook --execute --inplace replication_notebook.ipynb`
+  then `jupyter nbconvert --to html --output results/replication.html replication_notebook.ipynb`.
 - **Assertions over trust.** Every phase ends in hard acceptance tests that are
   run and reported. A failing test gets debugged, never weakened.
 - **Where the paper is ambiguous, implement both readings behind a flag** and

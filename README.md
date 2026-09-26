@@ -93,7 +93,9 @@ Which script regenerates which artifact:
 | `cd paper2_ticc && python experiments/exp1_table1_f1.py` … `exp4_*.py` | ~1–3 min each | `results/table1_f1.json`, `table2_recovery.json`, `fig3_samples.json`, `fig4_scalability.json` |
 | `cd paper3_market_modularity && python data/fetch_data.py` | ~10 min, network | `data/panel_prices.parquet` (already committed) |
 | `cd paper3_market_modularity && python run_phases.py 1 9` | ~25 min total; Phase 3 217 s, Phase 4 194 s, Phase 5 1,289 s and resumable | `results/phase1..8_*.json`, `results/series/*.parquet`, `results/tables/*.csv`, `figures/*.png` |
-| `cd paper3_market_modularity && python experiments/exp9_report.py` | seconds | `results/REPLICATION_REPORT.md`, `results/replication.html` |
+| `cd paper3_market_modularity && python experiments/exp9_report.py` | seconds | `results/REPLICATION_REPORT.md`, and rebuilds `replication_notebook.ipynb` **without outputs** |
+| `cd paper3_market_modularity && jupyter nbconvert --to notebook --execute --inplace replication_notebook.ipynb` | ~8 s | restores the notebook's stored outputs, so it renders on GitHub |
+| `cd paper3_market_modularity && jupyter nbconvert --to html --output results/replication.html replication_notebook.ipynb` | seconds | `results/replication.html` |
 | `cd modularity_indicator && python build_series.py && python evaluate.py && python robustness.py && python significance.py` | under 1 min total | `series.parquet`, `scores*.csv` |
 | `python reports/probe/spectral_probe.py` then `duality.py` | ~6 min each | `reports/probe/spectral_probe.parquet`, `*_auc.json` |
 
