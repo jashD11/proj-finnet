@@ -23,8 +23,8 @@ seed function as Phase 4, so these are bit-for-bit the same graphs that phase
 validated. Nothing is measured with a generator that was not checked first.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp5_measures.py
-    /opt/anaconda3/bin/python experiments/exp5_measures.py --force
+    python experiments/exp5_measures.py
+    python experiments/exp5_measures.py --force
 """
 
 import json

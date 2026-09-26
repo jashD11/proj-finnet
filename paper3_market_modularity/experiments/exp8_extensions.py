@@ -29,8 +29,8 @@ Four things the paper's own material calls for and does not deliver.
     algorithmic noise, and that has to lead the report rather than be buried.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp8_extensions.py
-    /opt/anaconda3/bin/python experiments/exp8_extensions.py --force
+    python experiments/exp8_extensions.py
+    python experiments/exp8_extensions.py --force
 """
 
 import json

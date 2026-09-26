@@ -95,7 +95,7 @@ The document's *measurements* stand; its proposed spine does not.
 Re-derive every number in it:
 
 ```bash
-/opt/anaconda3/bin/python reports/probe/check_numbers.py
+python reports/probe/check_numbers.py
 ```
 
 `check_numbers.py` recomputes all 91 quoted values from the parquet, the probe JSONs
@@ -135,9 +135,9 @@ they are directly comparable to the replication's published AUCs.
 | `*_auc.json` | The scored results. |
 
 ```bash
-/opt/anaconda3/bin/python reports/probe/spectral_probe.py   # writes the parquet
-/opt/anaconda3/bin/python reports/probe/duality.py          # extends the parquet
-/opt/anaconda3/bin/python reports/probe/incremental.py      # reads it
+python reports/probe/spectral_probe.py   # writes the parquet
+python reports/probe/duality.py          # extends the parquet
+python reports/probe/incremental.py      # reads it
 ```
 
 Requires the Paper-3 derived artifacts (`data/edges.npy`, `data/returns.npy`,

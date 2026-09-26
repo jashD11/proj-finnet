@@ -21,8 +21,8 @@ They are regenerated on demand from Pi, the sizes, and the recorded seed, which
 is also why every seed here is a pure function of (FIT_SEED, window, replicate).
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp4_nulls.py
-    /opt/anaconda3/bin/python experiments/exp4_nulls.py --force
+    python experiments/exp4_nulls.py
+    python experiments/exp4_nulls.py --force
 """
 
 import json

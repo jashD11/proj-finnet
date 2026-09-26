@@ -25,8 +25,8 @@ Then four things the paper did not do:
       inside crisis windows, where B5 predicts it inverts.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp6_scoring.py
-    /opt/anaconda3/bin/python experiments/exp6_scoring.py --force
+    python experiments/exp6_scoring.py
+    python experiments/exp6_scoring.py --force
 """
 
 import json

@@ -12,7 +12,7 @@ So a number cannot drift in either direction: editing the prose without
 rerunning the probe fails, and rerunning the probe without updating the prose
 fails too.
 
-    /opt/anaconda3/bin/python reports/probe/check_numbers.py
+    python reports/probe/check_numbers.py
 
 Exit status is 0 when every check passes, 1 otherwise.
 """

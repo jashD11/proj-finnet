@@ -90,10 +90,11 @@ only their measures are persisted.
 
 ## 4. Conventions
 
-- **Interpreter: `/opt/anaconda3/bin/python`** (3.12.4). `.venv` lacks `yfinance`,
-  `pyarrow` and `certifi`. `python-igraph` was installed into the anaconda env
-  for this paper and is a hard dependency (Louvain, exact clique number,
-  betweenness, degree-sequence rewiring).
+- **Interpreter: any Python 3.12 with `requirements.txt` installed.** Verified on
+  3.12.0 and 3.12.4. `python-igraph` is a hard dependency of this paper (Louvain,
+  exact clique number, betweenness, degree-sequence rewiring) and is pinned in
+  `requirements.txt`; so are `pyarrow` (the parquet series) and `yfinance`, which
+  only `data/fetch_data.py` needs.
 - **`exp1_data.py` is the config module.** Every constant (`DELTA_T`,
   `EDGE_FRACTION`, `N_LOUVAIN_SEEDS`, `LAG_T_DELTA`, `N_REPLICATES`,
   `SPLIT_YEAR`, `DATA_SEED`, `FIT_SEED`) lives at its top; downstream

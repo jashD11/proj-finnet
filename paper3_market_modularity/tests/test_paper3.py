@@ -2,7 +2,7 @@
 Sanity tests for the Silva et al. (2015) replication.
 
 Run:
-    /opt/anaconda3/bin/python -m pytest tests/
+    python -m pytest tests/
 
 Tests are added phase by phase; everything here is Phase 0.
 """

@@ -1,8 +1,8 @@
 """
 Run a contiguous range of phases end to end, stopping at the first failure.
 
-    /opt/anaconda3/bin/python run_phases.py 5 9
-    /opt/anaconda3/bin/python run_phases.py 5 9 --force
+    python run_phases.py 5 9
+    python run_phases.py 5 9 --force
 
 Each phase runs its own `run()`, prints its report, draws its figures and runs
 its acceptance tests, exactly as invoking the experiment directly would. A phase

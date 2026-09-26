@@ -19,7 +19,7 @@ The notebook is generated rather than hand-written so that the structural rule
 construction and checked in the acceptance tests rather than hoped for.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp9_report.py
+    python experiments/exp9_report.py
 """
 
 import json
