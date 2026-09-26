@@ -18,3 +18,5 @@ pyarrow>=14             # paper 3 (Silva): parquet price panel and measure serie
 pypdfium2>=4,<6         # paper 3 (Silva): crops the paper's own figures out of the PDF
 pillow>=10,<13          # paper 3 (Silva): quantises those crops
 pytest>=7.0,<10         # test suites
+notebook>=7,<9          # the replication_notebook.ipynb in each paper folder
+                        # (pulls ipykernel, IPython and nbconvert)
