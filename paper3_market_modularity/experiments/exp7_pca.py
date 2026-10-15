@@ -25,8 +25,8 @@ because projecting each family through its own PCA would guarantee overlapping
 clouds regardless of whether the models agree with anything.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp7_pca.py
-    /opt/anaconda3/bin/python experiments/exp7_pca.py --force
+    python experiments/exp7_pca.py
+    python experiments/exp7_pca.py --force
 """
 
 import json

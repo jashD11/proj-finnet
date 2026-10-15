@@ -9,8 +9,8 @@ imports its constants from here (the convention used by paper2_ticc's
 exp1_table1_f1.py). No magic numbers in function bodies.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp1_data.py
-    /opt/anaconda3/bin/python experiments/exp1_data.py --force   # re-derive panel
+    python experiments/exp1_data.py
+    python experiments/exp1_data.py --force   # re-derive panel
 """
 
 import json

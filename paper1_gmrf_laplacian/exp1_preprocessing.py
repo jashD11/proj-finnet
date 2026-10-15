@@ -21,7 +21,7 @@ import networkx as nx
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from solver.admm_graph import learn_laplacian
+from solver.laplacian_solver import learn_laplacian
 from utils.preprocessing import build_similarity, remove_market_factor
 from utils.graph_viz import laplacian_to_graph
 from utils.graph_metrics import check_laplacian, effective_rank

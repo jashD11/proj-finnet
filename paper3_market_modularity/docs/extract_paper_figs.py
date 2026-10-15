@@ -4,7 +4,7 @@ next to ours.
 Renders `docs/1501.05040v3.pdf` at 4x and cuts fixed fractional boxes. The boxes
 were set by eye once; re-run only if the source PDF changes.
 
-    /opt/anaconda3/bin/python docs/extract_paper_figs.py
+    python docs/extract_paper_figs.py
 """
 
 import os

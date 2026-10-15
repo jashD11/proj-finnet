@@ -1,0 +1,18 @@
+# Exact versions of the environment the committed results were produced under.
+# Python 3.12.0. Generated with: pip freeze. Use requirements.txt for a fresh install.
+igraph==1.0.0
+matplotlib==3.11.1
+networkx==3.6.1
+numpy==2.4.6
+pandas==3.0.3
+pillow==12.3.0
+pyarrow==25.0.0
+pypdfium2==5.12.1
+pytest==9.1.1
+python-igraph==1.0.0
+scikit-learn==1.9.0
+scipy==1.18.0
+tslearn==0.9.0
+# yfinance is not installed in this environment: the price panel is already cached
+# in paper3_market_modularity/data/panel_prices.parquet, so only a fresh download
+# needs it. requirements.txt pins it.

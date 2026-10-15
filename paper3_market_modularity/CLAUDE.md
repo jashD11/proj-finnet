@@ -11,7 +11,8 @@ Source of truth for the replication. Read §1–§4 plus the section for the pha
 you are working on. Tick §8's checklist after each phase. Companion docs:
 
 - `PLAN.md` — the approved phase-by-phase build plan.
-- `PITFALLS.md` — the 26-item methodological audit (A1–E11) this replication is organised around.
+- `PITFALLS.md` — the 34-item methodological audit (A1–E11) this replication is organised around
+  (33 pre-registered before implementation, plus B7 found during Phase 3).
 - `data/UNIVERSE.md` — generated; the realized universe and every difference from the paper's.
 - `results/REPLICATION_REPORT.md` — generated; claim-by-claim paper vs. us.
 
@@ -89,10 +90,11 @@ only their measures are persisted.
 
 ## 4. Conventions
 
-- **Interpreter: `/opt/anaconda3/bin/python`** (3.12.4). `.venv` lacks `yfinance`,
-  `pyarrow` and `certifi`. `python-igraph` was installed into the anaconda env
-  for this paper and is a hard dependency (Louvain, exact clique number,
-  betweenness, degree-sequence rewiring).
+- **Interpreter: any Python 3.12 with `requirements.txt` installed.** Verified on
+  3.12.0 and 3.12.4. `python-igraph` is a hard dependency of this paper (Louvain,
+  exact clique number, betweenness, degree-sequence rewiring) and is pinned in
+  `requirements.txt`; so are `pyarrow` (the parquet series) and `yfinance`, which
+  only `data/fetch_data.py` needs.
 - **`exp1_data.py` is the config module.** Every constant (`DELTA_T`,
   `EDGE_FRACTION`, `N_LOUVAIN_SEEDS`, `LAG_T_DELTA`, `N_REPLICATES`,
   `SPLIT_YEAR`, `DATA_SEED`, `FIT_SEED`) lives at its top; downstream
@@ -105,6 +107,11 @@ only their measures are persisted.
   null-model generation and layouts.
 - **Plots:** `matplotlib.use("Agg")`, save to `figures/`, `dpi=130`,
   `plt.close("all")`, never `plt.show()` in a script.
+- **`exp9_report.py` rebuilds `replication_notebook.ipynb` from scratch, without
+  stored outputs.** The committed notebook keeps its outputs so it renders on
+  GitHub, so after running Phase 9 re-execute it and rebuild the HTML:
+  `jupyter nbconvert --to notebook --execute --inplace replication_notebook.ipynb`
+  then `jupyter nbconvert --to html --output results/replication.html replication_notebook.ipynb`.
 - **Assertions over trust.** Every phase ends in hard acceptance tests that are
   run and reported. A failing test gets debugged, never weakened.
 - **Where the paper is ambiguous, implement both readings behind a flag** and

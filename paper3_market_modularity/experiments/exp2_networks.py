@@ -14,8 +14,8 @@ and 360 series a correlation matrix is mostly estimation error, and the paper
 never asks how much of its network is noise.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp2_networks.py
-    /opt/anaconda3/bin/python experiments/exp2_networks.py --force
+    python experiments/exp2_networks.py
+    python experiments/exp2_networks.py --force
 """
 
 import json

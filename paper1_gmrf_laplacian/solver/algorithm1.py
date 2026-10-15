@@ -11,7 +11,7 @@ Converges when ||L_new - L_old||_F / (||L_old||_F + 1) < tol.
 import numpy as np
 from scipy.linalg import eigh
 
-from solver.admm_graph import learn_laplacian
+from solver.laplacian_solver import learn_laplacian
 
 
 def algorithm1(

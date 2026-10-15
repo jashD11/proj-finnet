@@ -2,7 +2,7 @@
 Price-panel acquisition for Silva et al. (2015).
 
 One-time fetch. Run once from the paper root:
-    /opt/anaconda3/bin/python data/fetch_data.py
+    python data/fetch_data.py
 
 Downloads split/dividend-ADJUSTED daily closes (yfinance auto_adjust=True) for
 every NYSE common-stock candidate over the paper's window, then applies the

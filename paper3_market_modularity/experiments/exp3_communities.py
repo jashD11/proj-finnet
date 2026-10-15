@@ -20,8 +20,8 @@ the amount of modularity that exists *only* because the communities were
 allowed to move, which is the quantity its "modular dynamics" title is about.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp3_communities.py
-    /opt/anaconda3/bin/python experiments/exp3_communities.py --force
+    python experiments/exp3_communities.py
+    python experiments/exp3_communities.py --force
 """
 
 import json

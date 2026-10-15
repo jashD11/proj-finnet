@@ -25,7 +25,7 @@ reintroduce it.
 import numpy as np
 from scipy.linalg import eigh
 
-from solver.admm_graph import learn_laplacian, _build_incidence
+from solver.laplacian_solver import learn_laplacian, _build_incidence
 from utils.preprocessing import build_similarity
 
 

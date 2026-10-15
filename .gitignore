@@ -32,3 +32,16 @@ reports/*.out
 reports/*.toc
 reports/*.xdv
 reports/*.synctex.gz
+
+# modularity_indicator: derived artifacts. series.parquet and scores_*.csv ARE
+# tracked, since they make the report's numbers checkable without re-running the
+# solver. These three are redundant or purely local.
+modularity_indicator/series.csv
+modularity_indicator/figdata.txt
+modularity_indicator/figures/
+
+# session working files: audit briefs and cleanup plans generated for the author.
+# Not part of the project; regenerate on demand.
+RESUME_BRIEF.md
+CLEANUP_PLAN_*.md
+CLEANUP_SUMMARY_*.md

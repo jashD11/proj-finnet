@@ -12,6 +12,12 @@ Setup mirrors the paper: observations in R^50, K=5 clusters, window size w=3
 (so nw = 150). Runtime is structure-independent, so we time on random data and a
 random initial labeling. Cached to results/fig4_scalability.json; figure to
 figures/fig4_scalability.png.
+
+LIMITATION -- this is a timing proxy, not a TICC run. It never calls fit_ticc():
+it times one hand-rolled M+E step on random N(0,1) data with a random labeling,
+with ADMM capped at 200 iterations where real fits use 1000. The T range is
+1e3-1e5 against the paper's 1e4-1e7, so the paper's headline (10M points at
+~25 min/iteration) is untested here. Status: partial. See ../CLAUDE.md section 6.
 """
 
 import json

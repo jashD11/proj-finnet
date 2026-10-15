@@ -21,7 +21,7 @@ The user has read the paper and produced an audit of 26 methodological pitfalls 
 
 ## Environment facts (verified this session, not assumed)
 
-- **Interpreter: `/opt/anaconda3/bin/python` (3.12.4).** Has `yfinance 1.4.1`, `pandas 2.2.2`, `numpy 1.26.4`, `scipy`, `sklearn`, `pyarrow`, `certifi`, `tqdm`. `.venv/bin/python` has numpy/pandas/scipy/matplotlib/sklearn/pytest but **no** yfinance, pyarrow, or certifi (raw `urllib` fails SSL verification there). This matches the gotcha already recorded in `paper1_gmrf_laplacian/PIPELINE.md §8`.
+- **Interpreter: `python` (3.12.4).** Has `yfinance 1.4.1`, `pandas 2.2.2`, `numpy 1.26.4`, `scipy`, `sklearn`, `pyarrow`, `certifi`, `tqdm`. `.venv/bin/python` has numpy/pandas/scipy/matplotlib/sklearn/pytest but **no** yfinance, pyarrow, or certifi (raw `urllib` fails SSL verification there). This matches the gotcha already recorded in `paper1_gmrf_laplacian/PIPELINE.md §8`.
 - **`python-igraph` is missing from both environments.** It is a hard requirement (Louvain, exact clique number, betweenness, degree-sequence rewiring — all C-speed). **First action of Phase 0 is `pip install python-igraph` into the anaconda env, which requires user approval.** networkx fallback is ~20–50× slower and would push Phase 5 from minutes into many hours.
 - **Data is live.** `yf.download("GE", start="1986-01-01", end="2011-03-01", auto_adjust=True)` → **6,345 rows, 1986-01-02 → 2011-02-28, zero NaNs**. `auto_adjust=True` gives split/dividend-adjusted closes, which resolves audit A2 directly.
 - **Candidate universe source works.** `https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt` → 2,849 non-ETF NYSE symbols, **1,575 tagged "Common Stock"**. Paper had 3,799 candidates → 348 survivors.
@@ -172,7 +172,7 @@ Follows **paper2's** notebook style (`import expN as e; res = e.run(verbose=Fals
 
 ## Verification
 
-- `cd paper3_market_modularity && /opt/anaconda3/bin/python -m pytest tests/` — unit tests for the fixed-density thresholder (exact edge count), Eq. 2 normalization (blockmodel reproduces planted modularity), the configuration model (degree sequence preserved), the overlap-corrected ρ (recovers the known value on a synthetic AR series), and the harmonic-mean path length on a deliberately disconnected graph.
+- `cd paper3_market_modularity && python -m pytest tests/` — unit tests for the fixed-density thresholder (exact edge count), Eq. 2 normalization (blockmodel reproduces planted modularity), the configuration model (degree sequence preserved), the overlap-corrected ρ (recovers the known value on a synthetic AR series), and the harmonic-mean path length on a deliberately disconnected graph.
 - Each `experiments/expN_*.py` runnable standalone, printing its own acceptance-test results with `✓`/`✗`.
 - End-to-end: `for f in experiments/exp*.py; do python $f; done` from cold caches, then `jupyter nbconvert --execute replication_notebook.ipynb` clean.
 - **The report is judged on honesty, not agreement.** Following the existing repo's editorial rule: label each result *reproduced / partial / not reproduced / not implemented*, and never round toward the paper. If the non-overlapping ρ collapses from 0.99 to 0.7, that is the headline.

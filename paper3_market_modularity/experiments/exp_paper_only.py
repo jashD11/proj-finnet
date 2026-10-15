@@ -35,8 +35,8 @@ plotted axes pin them down:
     paper plots; the edge form lands at ~0.19, inside it.
 
 Run:
-    /opt/anaconda3/bin/python experiments/exp_paper_only.py
-    /opt/anaconda3/bin/python experiments/exp_paper_only.py --force
+    python experiments/exp_paper_only.py
+    python experiments/exp_paper_only.py --force
 """
 
 import json
