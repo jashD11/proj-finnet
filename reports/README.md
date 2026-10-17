@@ -21,7 +21,7 @@ Prose in these documents uses no em-dashes, by request.
 
 ---
 
-## `progress_report.tex` — running working log (last entry 7 Sep 2026)
+## `progress_report.tex` — running working log (last entry 18 Oct 2026)
 
 A dated log rather than a paper: one `\logday{...}` entry per stretch of work,
 newest at the bottom. Covers the three replications in timeline order, the
@@ -33,7 +33,17 @@ Entries are a historical record and are not rewritten when later work supersedes
 them. Where a conclusion is retracted, the newer entry says so explicitly; the
 12 August D1/D2 framing is retracted in the 31 August entry.
 
-## `2026-09-08_modularity_equivalence.tex` — the current report (8 Sep 2026)
+## `2026-10-18_proposal_issues.tex` — the current note (18 Oct 2026)
+
+Reply to Prof. Anguluri's October proposal, *Modularity Matrix Approach for Graph
+Learning?*, flagging three issues before execution: Part I(c) holds only for
+unit-degree graphs, which the paper's time-varying graphs are not; the Part III
+objective is unbounded below for every useful `η` (bounded for `η < 0.186`, unbounded
+for `η > 0.64`), with a suggested repair `1ᵀd = p`; and Paper 1's Fig 2 had not
+recovered the sectors until Algorithm 1 was started from the Problem 1 estimate.
+Every number is printed by `modularity_graph_learning/report_numbers.py`.
+
+## `2026-09-08_modularity_equivalence.tex` — previous report (8 Sep 2026)
 
 Answers the question set at the 31 August meeting: find a quantity derived from the
 modularity matrix `B` that carries the same information as Paper 1's Fiedler value

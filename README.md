@@ -4,7 +4,7 @@ Three network-inference papers rebuilt from scratch on real market data, then us
 whether the crisis indicators they propose actually carry a signal.
 
 Summer Undergraduate Research Programme 2026, supervised by Prof. Rajasekhar Anguluri.
-11,623 lines of Python across 70 files, 51 tests, three replications and one original study.
+12,124 lines of Python across 74 files, 71 tests, three replications, one original study, and the current proposal work.
 
 The short version: the papers' mechanisms mostly reproduce, and their indicators mostly do not
 survive the null models the papers omit. Those negative results are the substance of the work
@@ -61,6 +61,7 @@ difference from the paper's own table is **0.1554** with the sign agreeing on **
 | [`paper2_ticc/`](paper2_ticc/) | Hallac, Vare, Boyd & Leskovec (KDD 2017), *TICC*. Subsequence clustering by block-Toeplitz inverse covariance with dynamic-programming segmentation. Solver, 6 baselines, 4 experiments. |
 | [`paper3_market_modularity/`](paper3_market_modularity/) | Silva et al. (2015), *Modular Dynamics of Financial Market Networks*. 6,315 daily correlation networks over 25 years, Louvain communities, a blockmodel null, and the [34-item audit](paper3_market_modularity/PITFALLS.md) the replication is organised around. |
 | [`modularity_indicator/`](modularity_indicator/) | Original study: does the modularity matrix `B` yield an equivalent of the Fiedler value `λ₂(L)`? Answer, negative, in [`FINDINGS.md`](modularity_indicator/FINDINGS.md). |
+| [`modularity_graph_learning/`](modularity_graph_learning/) | Current work: Prof. Anguluri's October 2026 proposal, modularity as a null-model lens on Laplacian graph learning (Paper 1). Part I lemma tests, the Part III boundedness analysis, and the Fig 2 initialisation evidence. |
 | [`reports/`](reports/) | Write-ups, plus [`probe/`](reports/probe/) — spectral evidence over all 6,315 networks. Start at [`reports/README.md`](reports/README.md). |
 | [`docs/`](docs/) | The three source papers as PDFs. |
 
@@ -77,10 +78,10 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt        # or requirements-lock.txt for exact versions
 ```
 
-Tests first; all three suites together finish in under five seconds.
+Tests first; all four suites together finish in under ten seconds.
 
 ```bash
-./run_tests.sh            # all three, one command
+./run_tests.sh            # all four, one command
 ```
 
 Or individually:
@@ -115,6 +116,7 @@ Two scripts exist only to check that the prose matches the data, and exit non-ze
 ```bash
 python reports/probe/check_numbers.py        # all 91 values in the 19 Aug report
 python modularity_indicator/report_numbers.py # every number in the 8 Sep report
+python modularity_graph_learning/report_numbers.py   # every number in the 18 Oct note
 ```
 
 Phase-level artifacts under `paper3_market_modularity/data/` (`edges.npy`, `returns.npy`,
@@ -129,8 +131,12 @@ are from the Silva et al. preprint, reproduced for side-by-side comparison only.
 
 ## Reports
 
+- [`reports/2026-10-18_proposal_issues.tex`](reports/2026-10-18_proposal_issues.tex)
+  — current. Three issues to settle before executing the October proposal: Part I(c) applies
+  only to unit-degree graphs, the Part III objective is unbounded below for every useful `η`,
+  and our Fig 2 had not recovered the sectors (now repaired).
 - [`reports/2026-09-08_modularity_equivalence.tex`](reports/2026-09-08_modularity_equivalence.tex)
-  — current. Whether `B` yields an equivalent of the Fiedler value. The answer is negative in two
+  — previous. Whether `B` yields an equivalent of the Fiedler value. The answer is negative in two
   parts, and the negative answer is the deliverable. 10 pages.
 - [`reports/2026-08-19_discrepancy_explained.tex`](reports/2026-08-19_discrepancy_explained.tex)
   — the three-paper exploration built up from Silva's own definitions. 17 pages. Its §9 is
@@ -142,8 +148,13 @@ are from the Silva et al. preprint, reproduced for side-by-side comparison only.
 ## Status
 
 The three replications are complete to the extent recorded in each folder's `CLAUDE.md`; Paper 3
-runs Phases 0–9, Paper 2 is explicitly partial. Active work is the spectral direction: `μ_N(B)`,
-the most negative modularity eigenvalue, is the best modularity-derived crisis signal on both
-constructions tested — 0.760 on Paper 3's 6,315 networks and 0.775 on Paper 1's FAAMUNG data — and
-is significant on neither alone. The next tests are a third, unrelated network construction, then
-the two robustness checks currently out of scope (A5 market-mode removal, A6 window length).
+runs Phases 0–9, Paper 2 is explicitly partial. Paper 1's Fig 2 was repaired on 18 Oct 2026
+(paper's 753-day window; Algorithm 1 now starts from the Problem 1 estimate and recovers the three
+sectors exactly).
+
+Active work is Prof. Anguluri's October 2026 proposal on modularity and Laplacian graph learning,
+in `modularity_graph_learning/`; start with the 18 Oct note above. The earlier spectral direction
+is paused: it found that `μ_N(B)`, the most negative modularity eigenvalue, is the best
+modularity-derived crisis signal on both constructions tested (0.760 on Paper 3's 6,315 networks,
+0.775 on Paper 1's FAAMUNG data) and significant on neither alone. Its open tests (a third network
+construction, A5 market-mode removal, A6 window length) are not scheduled.
