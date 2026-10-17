@@ -7,7 +7,11 @@ Runs the GMRF Laplacian solver with β=10 on 4 preprocessing variants:
   (c) Correlation, market in   ← paper's best (scaling implicitly handles market)
   (d) Correlation, market out
 
-Data: S&P 500, 3 sectors (~97 stocks, 2016–2019 log returns).
+Data: S&P 500, 3 sectors (97 stocks, 753 days, 2016-01-05 to 2018-12-31, the
+paper's window).
+
+Panel order differs from the paper's: our (c) correlation + market kept is the
+paper's (d), the panel the paper calls best.
 Saves figures/fig1_preprocessing.png.
 """
 
@@ -179,7 +183,7 @@ def main():
 
     fig.suptitle(
         "Fig 1: Effect of Preprocessing on Learned Graph\n"
-        f"S&P 500 ({p} stocks, 3 sectors, 2016–2019)  |  β={BETA}",
+        f"S&P 500 ({p} stocks, 3 sectors, {df.index[0].date()} to {df.index[-1].date()})  |  β={BETA}",
         fontsize=14, y=0.99
     )
     plt.tight_layout(rect=[0, 0.05, 1, 0.97])

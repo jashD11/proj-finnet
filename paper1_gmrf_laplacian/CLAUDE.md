@@ -22,7 +22,7 @@ Replicate the paper's 4 experiments. The paper learns **graph Laplacian matrices
 | Fig | Experiment | Data | Core method |
 |-----|-----------|------|-------------|
 | Fig 1 | Preprocessing effects | 97 S&P500 stocks (3 sectors) | CLR two-stage [Nie 2016] |
-| Fig 2 | Degree control / k-component | same 97 stocks | Algorithm 1 (proposed) vs SGL |
+| Fig 2 | Degree control / k-component | same 97 stocks | Algorithm 1 (proposed) vs Problem 1 + ℓ1 baseline (true SGL not implemented, D5) |
 | Fig 3 | Time-varying graphs | FAAMUNG (7 stocks) | Algorithm 2 (rolling Algorithm 1) |
 | Fig 4 | Trading strategy | FAAMUNG (7 stocks) | algebraic connectivity signal |
 
@@ -68,6 +68,7 @@ repeat until converged:
 - `rank(L) = p - k` enforced via the spectral penalty (sum of k smallest eigenvalues → 0, Fan's theorem).
 - `diag(L) = 1` is the **degree control** constraint — this is the paper's key fix vs SGL. Without it → isolated nodes.
 - Paper uses **β = 10** for both methods, **k = 3** (three sectors).
+- **Initial point matters (D6).** The paper's Algorithm 1 takes an initial estimate L0. We start from the Problem 1 estimate (β=0). The uniform complete graph is NOT usable: its nonzero eigenvalue has multiplicity p−1, so the first V-step picks an arbitrary basis and the forced components are arbitrary.
 
 ### Algorithm 2 — Time-varying (Fig 3)
 Rolling-window causal estimator. For each window t, solve Algorithm-1-style problem with a temporal-consistency penalty:
@@ -98,7 +99,7 @@ Financial_networks_project/
 │
 ├── data/
 │   ├── fetch_data.py          # one-time yfinance pull → CSVs. Run once.
-│   ├── sp500_3sectors.csv     # cached: 97 stocks, 2016-2019 log returns
+│   ├── sp500_3sectors.csv     # cached: 97 stocks × 753 days, 2016-01-05 to 2018-12-31 (paper's window)
 │   ├── faamung.csv            # cached: 7 stocks, 2019-2020 log returns
 │   └── tickers.py             # ticker lists (107 requested → 97 usable, + FAAMUNG)
 │
@@ -106,7 +107,7 @@ Financial_networks_project/
 │   ├── laplacian_solver.py    # THE ENGINE: GMRF Laplacian solver, L-BFGS-B (Problem 1 / 10)
 │   ├── algorithm1.py          # k-component wrapper (alternating V-step + L-step)
 │   ├── algorithm2.py          # time-varying rolling wrapper around algorithm1
-│   └── sgl_benchmark.py       # SGL [Kumar 2016] baseline for Fig 2 comparison
+│   └── sgl_benchmark.py       # Fig 2 baseline: Problem 1 + ℓ1. NOT SGL despite the name (D5)
 │
 ├── utils/
 │   ├── preprocessing.py       # correlation vs covariance, scaling, market removal
@@ -117,7 +118,7 @@ Financial_networks_project/
 │   └── test_solver.py         # synthetic GMRF sanity check (run after building solver)
 │
 ├── exp1_preprocessing.py      # Fig 1 — 4-panel preprocessing comparison
-├── exp2_kcomponent.py         # Fig 2 — Algorithm 1 vs SGL (k=3)
+├── exp2_kcomponent.py         # Fig 2 — Algorithm 1 vs Problem 1 + ℓ1 baseline (k=3)
 ├── exp3_timevarying.py        # Fig 3 — FAAMUNG rolling λ₂ indicator + network snapshots
 ├── exp4_trading.py            # Fig 4 — S1 vs S2 cumulative PnL
 │
@@ -147,7 +148,7 @@ Financial_networks_project/
 - `laplacian_solver.py` — implements Problem 1 / Problem 10: GMRF Laplacian estimation by **L-BFGS-B over non-negative edge weights**, `L(w) = Kᵀdiag(w)K` (§6). Signature: `learn_laplacian(S, beta, max_iter, tol) -> L`. Was named `admm_graph.py`; it never implemented ADMM. **Build and verify this before anything else.**
 - `algorithm1.py` — wraps the solver in the alternating V-step/L-step loop to produce k-component graphs (Fig 2's proposed method).
 - `algorithm2.py` — wraps algorithm1 in a causal rolling window with the δ temporal penalty (Fig 3).
-- `sgl_benchmark.py` — the SGL baseline (spectral constraints, NO degree control) so Fig 2 can show the isolated-node failure mode.
+- `sgl_benchmark.py` — the Fig 2 baseline. It is Problem 1 + ℓ1 (β=10) with NO degree control and NO spectral constraint, so it is **not** SGL (Kumar et al., JMLR 2020) and cannot show the paper's isolated-node failure mode (D5).
 
 **utils/**
 - `preprocessing.py` — functions for the 4 preprocessing variants: `to_correlation()`, `scale_data()`, `remove_market_factor()`.
@@ -208,10 +209,13 @@ and no timing or iteration log exists:
 constraint on `m = p(p−1)/2` variables — solved directly by `scipy.optimize.minimize`
 with `method="L-BFGS-B"`. See `solver/laplacian_solver.py`.
 
-**Cost of the choice.** `w_ij = 0 ∀j` drives `log gdet → −∞`, so no node can reach
-zero degree. The SGL baseline therefore cannot produce true isolated nodes, and the
-paper's Fig 2 failure mode shows up as a draw-threshold artifact instead (deviation
-D3, §9).
+**Cost of the choice.** Shrinking all of one node's weights sends an eigenvalue to
+zero and `log gdet → −∞`, which resists isolation, but it is **not** a hard barrier:
+L-BFGS-B's projection can zero a whole row in one step, after which the eigenvalue
+drops below the 1e-10 tolerance and leaves the pseudo-determinant. Algorithm 1 from the
+old uniform start produced a degree-0.0 node this way (D6). The Fig 2 baseline stays
+connected in practice; the paper's failure mode is absent because the baseline is not
+SGL (D5), not because isolation is impossible.
 
 ---
 
@@ -230,8 +234,8 @@ D3, §9).
 - [x] solver/algorithm2.py
 - [x] exp3_timevarying.py → fig3 reproduced
 - [x] exp4_trading.py → fig4 produced honestly (paper-direction rule; S2 does NOT beat S1 — see D1)
-- [x] exp2_kcomponent.py → fig2 reproduced (Alg1 has no isolated nodes; true k=3 at η=300, rank=94)
-- [x] exp1_preprocessing.py → fig1 reproduced (panel d cleanest)
+- [x] exp2_kcomponent.py → fig2 reproduced (2026-10-18 repair): Alg1 from the Problem 1 start gives 3 components of 52/28/17 = the sectors, **ARI 1.000**, no isolated nodes, degrees [1.001, 1.007], rank 94. Before the repair the components were arbitrary (D6).
+- [x] exp1_preprocessing.py → fig1 reproduced, narrowly: our (c) = paper's (d) (correlation, market kept) is cleanest at 199/200 within-sector edges, vs (d) corr market out 198, (b) 198, (a) 190. Under correlation, market removal barely matters (D7).
 - [x] Fix 1 — trading signal direction diagnosed + aligned + τ table
 - [x] Fix 2 — Fig 3 snapshots selected by date
 - [x] Fix 3 — Fig 2 histogram-led + honest SGL caption
@@ -257,6 +261,9 @@ These are documented, intentional divergences from the paper — not bugs.
 | # | What diverges | Paper | This implementation | Reason |
 |---|--------------|-------|---------------------|--------|
 | D1 | Trading result (Fig 4) | invest when λ₂ < τ, τ=1.0; S2 exits during the crash AND re-enters in April to catch the rebound → S2 (~1.35) beats S1 (~1.12) [read off paper Fig 4] | Same rule, same τ, live gate, same evaluation window (backtest ends 2020-05-01 = END_DATE, matching the paper's Fig 4; λ₂ ∈ [0.66, 1.50], 79/201 days invested). S2 dodges the crash exactly like the paper (flat ≈ −0.01 while S1 falls to −0.21) and also sits out autumn 2019 (like paper's S2 in Oct–Nov). **But our λ₂ stays ≈1.3 through April, so S2 misses the early rebound: S2 = −0.011 < S1 = +0.078.** | Post-crash λ₂ decay speed differs from the paper's (their series collapses below 1.0 in April; ours doesn't until late May). Mechanism and crash-avoidance replicate; the final P&L ranking does not, due to re-entry timing. No threshold is tuned to fix this — τ=median tables are printed as in-sample reference only. |
-| D2 | ~~k-components (Fig 2)~~ **RESOLVED** | rank=p−3 (3 components) | rank=94 = p−3 achieved with η=300 (η=10 and η=150 insufficient; caches alg1_L_eta150/300.npy) | No longer a deviation. Kept as a record: the spectral penalty needs η≈300 at p=97 to force k=3. |
-| D3 | SGL isolated nodes (Fig 2) | True zero-degree nodes (L-space ADMM) | No true isolated nodes (edge-weight solver) | Edge-weight parameterisation makes w_ij=0 ∀j impossible (log gdet → −∞). SGL ring is a draw-threshold artifact, not true isolation. |
+| D2 | ~~k-components (Fig 2)~~ **RESOLVED** | rank=p−3 (3 components) | rank=94 = p−3 with η=300 | Kept as a record: on the old 1,005-day data η=10 and η=150 were insufficient (their caches were deleted 2026-10-18 with the data-window fix). η=300 is ours; the paper does not report η. |
+| D3 | Isolated nodes in the baseline (Fig 2) | SGL shows true zero-degree nodes | Baseline is connected; its "ring" is a drawing-threshold artifact (all weights < 0.05) | Old reason ("edge-weight solver makes isolation impossible") was **false**, see §6 and D6. Real reason: the baseline is not SGL (D5). |
+| D5 | Fig 2 baseline is not SGL | SGL [6] = Kumar et al. JMLR 2020: k-component spectral constraint, no degree control | `sgl_benchmark.py` = Problem 1 + ℓ1 (β=10), no spectral constraint | Mislabelled until 2026-10-18. True SGL (R package spectralGraphTopology; no R here) is deferred to the proposal's Part III as a Python port. |
+| D6 | Fig 2 used the old 4-year window and a degenerate initial point (**fixed 2026-10-18**) | Jan 2016 to Jan 2019, 753 days; Algorithm 1 from an initial estimate L0 | Was 1,005 days (to 2019-12-31) and a uniform start: components 77/12/8, ARI 0.012 vs sectors. On 753 days the uniform start gives 96 + one isolated node (ARI −0.009). Now 753 days + Problem 1 start: ARI 1.000 | Uniform complete graph has a (p−1)-fold eigenvalue, so the first V-step is arbitrary. Numbers: `modularity_graph_learning/report_numbers.py` §C. |
+| D7 | Fig 1 panel order and strength of the result | (d) = correlation, market kept, "clearly" best | Our (c) is the paper's (d); it wins by one edge (199 vs 198 of 200 within-sector) | Our market removal regresses on the equal-weighted mean, not an index; under correlation the Laplacian largely ignores a uniform market move (tr(LS) = tr(LJSJ)), so a small gap is expected. |
 | D4 | ~~Temporal penalty (Fig 3)~~ **RESOLVED — was a bug, not a deviation** | Full Frobenius ‖L_t−L_{t-1}‖²_F | Now implemented EXACTLY in edge-weight space: γ(2‖Δw‖² + ‖K_sqᵀΔw‖²), γ=δ/n_t, plus true warm start (w0=w_prev) | The old "linear cross-term" S_aug = S_t **+** 2δ/n_t·L_prev had the sign inverted (the Frobenius cross-term is −2δ·tr(L·L_prev)) — it repelled each window from the previous graph and crushed λ₂ into [0, 0.78] with 65 disconnected windows. The old claim that the quadratic term "breaks the pseudoinverse gradient" was false: it is a plain quadratic in w. See dev_log §18. |

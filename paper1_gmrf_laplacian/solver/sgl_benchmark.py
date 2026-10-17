@@ -1,13 +1,18 @@
 """
-SGL baseline — Structured Graph Learning [Kumar et al. 2016].
+Fig 2 baseline. NOT SGL, despite the file name (kept so cache paths and history
+stay stable).
 
-SGL solves the same GMRF problem but WITHOUT the degree-control constraint
-(diag(L) = 1 is not enforced).  This causes isolated nodes (zero-degree
-rows/cols) when the sparsity penalty β is high, which is the failure mode
-that Algorithm 1 fixes.  Used in Fig 2 for comparison.
+What this is: Problem 1, the plain GMRF Laplacian MLE with an l1 penalty
+(beta = 10, the paper's value), with NO degree control and NO rank/spectral
+constraint. It returns one connected component (rank p-1).
 
-Implementation: identical call to learn_laplacian with degree_control=False
-and beta=10 (same β as Algorithm 1 per the paper).
+What the paper compares against: SGL, Kumar, Ying, Cardoso and Palomar, "A
+unified framework for structured graph learning via spectral constraints"
+(JMLR 2020), which imposes the k-component spectral constraint WITHOUT degree
+control and so produces isolated nodes. That method is not implemented here (its
+reference implementation is the R package spectralGraphTopology). The paper's
+Fig 2 failure mode is therefore not reproduced by this baseline; see CLAUDE.md
+deviation D3/D5.
 """
 
 import numpy as np
@@ -16,7 +21,7 @@ from solver.laplacian_solver import learn_laplacian
 
 def sgl(S, beta=10.0, max_iter=1000, tol=1e-6):
     """
-    SGL estimate of the graph Laplacian.
+    Problem 1 + l1 baseline estimate of the graph Laplacian (not SGL).
 
     Parameters
     ----------
@@ -27,7 +32,7 @@ def sgl(S, beta=10.0, max_iter=1000, tol=1e-6):
 
     Returns
     -------
-    L : (p, p) estimated Laplacian (may have isolated nodes)
+    L : (p, p) estimated Laplacian (connected; no isolated nodes in practice)
     """
     return learn_laplacian(
         S,

@@ -65,7 +65,8 @@ def main():
         print(f"[skip] {sp500_path} already exists — delete to re-fetch.")
     else:
         print("[fetch] S&P500 130-stock universe …")
-        df_sp = fetch_log_returns(SP500_130, start="2016-01-01", end="2020-01-01")
+        # Paper: "Jan. 1st 2016 to Jan. 1st 2019 ... 753 days worth of data".
+        df_sp = fetch_log_returns(SP500_130, start="2016-01-01", end="2019-01-01")
         df_sp.to_csv(sp500_path)
         print(f"  Saved → {sp500_path}  ({df_sp.shape})")
 

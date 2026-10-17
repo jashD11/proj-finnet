@@ -59,10 +59,16 @@ f(w) = q_effᵀ w − log gdet(L(w)),    q_eff,l = (S_ii + S_jj − 2S_ij) + β
 
 strictly convex in `w` over connected graphs.
 
-**Cost of the choice.** `w_ij = 0 ∀j` drives `log gdet → −∞`, so no node can reach zero
-degree. The SGL baseline therefore cannot produce true isolated nodes, and the paper's
-Fig 2 failure mode appears as a draw-threshold artifact instead (deviation D3 in
-`CLAUDE.md` §9).
+**Cost of the choice.** Shrinking every weight of one node toward zero sends an
+eigenvalue toward zero and `log gdet → −∞`, which resists isolation. This was once
+written up as "no node can reach zero degree"; **that is false.** The barrier is not
+absolute: L-BFGS-B's projection can set a whole row of weights to exactly 0 in one step,
+the eigenvalue then falls below the `1e-10` tolerance and simply leaves the
+pseudo-determinant. Algorithm 1 from the old uniform start did exactly this on the
+753-day data (one node of degree 0.0; see `solver/algorithm1.py`). The Fig 2 baseline
+stays connected in practice, so the paper's isolated-node failure mode is not shown;
+the reason is that the baseline is not SGL (deviation D5 in `CLAUDE.md` §9), not that
+isolation is impossible.
 
 ## 3. Four numerical traps
 

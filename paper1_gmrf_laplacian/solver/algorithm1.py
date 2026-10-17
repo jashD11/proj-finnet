@@ -6,6 +6,17 @@ Alternating minimisation:
   L-step: learn_laplacian(S + η V Vᵀ, degree_control=True)
 
 Converges when ||L_new - L_old||_F / (||L_old||_F + 1) < tol.
+
+Initialisation matters. The paper's Algorithm 1 takes an "initial estimate L0".
+The uniform complete graph is NOT a usable L0: its nonzero eigenvalue p/(p-1)
+has multiplicity p-1, so the first V-step returns an arbitrary basis of that
+eigenspace and the components that form are arbitrary too. Measured at eta=300:
+on the old 1,005-day window, components of 77/12/8 stocks (ARI 0.012 against
+sectors); on the paper's 753-day window, 96 stocks plus one ISOLATED node (degree
+0.0, ARI -0.009), the very failure degree control is meant to prevent. The
+default L0 is therefore the Problem 1 estimate (beta = 0), whose bottom
+eigenvectors already carry the cluster structure: on the 753-day window the
+components are 52/28/17, exactly the sectors (ARI 1.0).
 """
 
 import numpy as np
@@ -24,6 +35,7 @@ def algorithm1(
     tol=1e-4,
     max_inner=1000,
     inner_tol=1e-6,
+    L0=None,
 ):
     """
     Learn a k-component graph Laplacian from similarity matrix S.
@@ -39,6 +51,8 @@ def algorithm1(
     tol        : outer convergence tolerance (relative Frobenius change)
     max_inner  : max L-BFGS-B iterations inside learn_laplacian
     inner_tol  : tolerance passed to learn_laplacian
+    L0         : (p, p) initial Laplacian; default is the Problem 1 estimate
+                 learn_laplacian(S, beta=0) (see module docstring)
 
     Returns
     -------
@@ -47,8 +61,9 @@ def algorithm1(
     p = S.shape[0]
     np.random.seed(42)
 
-    # Initialise L as the identity-like valid Laplacian (degree=1 for all nodes)
-    L = np.eye(p) * (p - 1) / p - np.ones((p, p)) / p
+    # Initialise from the Problem 1 estimate, not the uniform complete graph,
+    # whose degenerate spectrum makes the first V-step arbitrary.
+    L = L0 if L0 is not None else learn_laplacian(S, beta=0.0, max_iter=max_inner, tol=inner_tol)
 
     for iteration in range(max_outer):
         # V-step: k eigenvectors for k smallest eigenvalues of L

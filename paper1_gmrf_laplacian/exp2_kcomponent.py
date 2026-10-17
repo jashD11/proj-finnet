@@ -2,10 +2,13 @@
 Experiment 2 — k-component graph learning (Fig 2).
 
 Compares:
-  SGL [Kumar 2016]:   GMRF without degree control → may produce isolated nodes
-  Algorithm 1 (ours): degree-controlled GMRF + spectral penalty → clean k=3 components
+  Baseline:     Problem 1 + l1 (beta=10), no degree control, no spectral constraint.
+                NOT SGL [Kumar et al. JMLR 2020]; see solver/sgl_benchmark.py.
+  Algorithm 1:  degree-controlled GMRF + spectral penalty, initialised from the
+                Problem 1 estimate (see solver/algorithm1.py for why).
 
-Data: S&P 500, 3 sectors (~97 stocks, 2016–2019 log returns).
+Data: S&P 500, 3 sectors (97 stocks, 753 days, 2016-01-05 to 2018-12-31, the
+paper's window). Reports components and ARI against the sector labels.
 Saves figures/fig2_kcomponent.png.
 """
 
@@ -16,6 +19,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import networkx as nx
+from scipy.sparse.csgraph import connected_components
+from sklearn.metrics import adjusted_rand_score
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -27,11 +32,11 @@ from utils.graph_metrics import check_laplacian, effective_rank
 from data.tickers import SP500_SECTORS
 
 # ── Hyperparameters ────────────────────────────────────────────────────────────
-BETA  = 10.0    # SGL sparsity penalty
+BETA  = 10.0    # baseline sparsity penalty (paper: beta = 10 for both methods)
 K     = 3       # number of components (3 sectors)
 ETA   = 300.0   # Algorithm 1 spectral penalty weight (η=300 forces rank=94 / k=3)
 RHO   = 100.0   # Algorithm 1 degree-control penalty
-EDGE_THRESHOLD = 0.05   # at this threshold SGL shows ~0 edges; Alg1 shows ~274
+EDGE_THRESHOLD = 0.05   # drawing threshold only; all baseline weights fall below it
 EDGE_SCALE     = 3.0    # edge width multiplier
 
 SGL_CACHE  = os.path.join("data", "sgl_L.npy")
@@ -51,17 +56,17 @@ def load_or_compute(S, tickers):
     if os.path.exists(SGL_CACHE) and os.path.exists(ALG1_CACHE):
         L_sgl  = np.load(SGL_CACHE)
         L_alg1 = np.load(ALG1_CACHE)
-        print(f"Loaded SGL and Algorithm 1 from cache.")
+        print("Loaded baseline and Algorithm 1 from cache.")
         return L_sgl, L_alg1
 
     if os.path.exists(SGL_CACHE):
         L_sgl = np.load(SGL_CACHE)
-        print("Loaded SGL from cache.")
+        print("Loaded baseline from cache.")
     else:
-        print(f"Running SGL (β={BETA}) on p={len(tickers)} stocks …")
+        print(f"Running baseline (Problem 1 + l1, β={BETA}) on p={len(tickers)} stocks …")
         L_sgl = sgl(S, beta=BETA)
         np.save(SGL_CACHE, L_sgl)
-        print("  SGL done.")
+        print("  Baseline done.")
 
     if os.path.exists(ALG1_CACHE):
         L_alg1 = np.load(ALG1_CACHE)
@@ -126,7 +131,16 @@ def main():
     L_sgl, L_alg1 = load_or_compute(S, tickers)
 
     # ── Diagnostics ───────────────────────────────────────────────────────────
-    for name, L in [("SGL", L_sgl), ("Algorithm 1", L_alg1)]:
+    sector = np.array([SP500_SECTORS.get(t, "?") for t in tickers])
+    comp = {}
+    for name, L in [("Baseline", L_sgl), ("Algorithm 1", L_alg1)]:
+        W = -L.copy()
+        np.fill_diagonal(W, 0.0)
+        n_comp, labels = connected_components(W > 1e-4)
+        sizes = sorted(np.bincount(labels).tolist(), reverse=True)
+        comp[name] = (n_comp, sizes, adjusted_rand_score(sector, labels))
+        print(f"\n{name}: {n_comp} components {sizes[:6]}, "
+              f"ARI(components, sectors) = {comp[name][2]:.3f}")
         chk = check_laplacian(L)
         rk = effective_rank(L)
         deg = np.diag(L)
@@ -155,7 +169,7 @@ def main():
 
     # Degree histograms (top row)
     for ax, L, name, color in [
-        (ax_hsgl,  L_sgl,  "SGL",         "#d62728"),
+        (ax_hsgl,  L_sgl,  "Baseline",    "#d62728"),
         (ax_halg1, L_alg1, "Algorithm 1", "#1f77b4"),
     ]:
         deg = np.diag(L)
@@ -172,13 +186,14 @@ def main():
     # SGL caption names the threshold artifact explicitly so the empty ring is
     # not misread as node isolation.
     sgl_title = (
-        f"SGL  (β={BETA}, no degree control)\n"
-        f"Ring is draw-threshold artifact — all SGL edge weights\n"
+        f"Baseline: Problem 1 + l1 (β={BETA}); not SGL, no spectral constraint\n"
+        f"Ring is a drawing-threshold artifact, not isolation: all edge weights\n"
         f"below threshold (max weight = {max_sgl_w:.4f} < {EDGE_THRESHOLD})"
     )
+    n_c, sizes_c, ari_c = comp["Algorithm 1"]
     alg1_title = (
-        f"Algorithm 1  (k={K}, η={ETA}, degree-controlled)\n"
-        f"k=3 components confirmed (rank=94); sector grouping visible in layout\n"
+        f"Algorithm 1  (k={K}, η={ETA}, degree-controlled, Problem 1 init)\n"
+        f"{n_c} components of sizes {sizes_c[:K]}; ARI vs sectors = {ari_c:.3f}\n"
         f"edge threshold = {EDGE_THRESHOLD}"
     )
     draw_panel(ax_sgl,  L_sgl,  tickers, sgl_title)
@@ -197,9 +212,10 @@ def main():
     )
 
     fig.suptitle(
-        "Fig 2: Degree Control — SGL vs Algorithm 1\n"
-        f"S&P 500 ({p} stocks, 3 sectors, 2016–2019) — "
-        f"SGL rank=96 (single component)  |  Algorithm 1 rank=94 (k=3 components)",
+        "Fig 2: Degree Control, baseline vs Algorithm 1\n"
+        f"S&P 500 ({p} stocks, 3 sectors, {df.index[0].date()} to {df.index[-1].date()}): "
+        f"baseline rank={effective_rank(L_sgl)} ({comp['Baseline'][0]} component)  |  "
+        f"Algorithm 1 rank={effective_rank(L_alg1)} ({n_c} components)",
         fontsize=12, y=0.995
     )
     plt.tight_layout(rect=[0, 0.055, 1, 0.99])
