@@ -21,7 +21,7 @@ Prose in these documents uses no em-dashes, by request.
 
 ---
 
-## `progress_report.tex` — running working log (last entry 18 Oct 2026)
+## `progress_report.tex` — running working log (last entry 27 Oct 2026)
 
 A dated log rather than a paper: one `\logday{...}` entry per stretch of work,
 newest at the bottom. Covers the three replications in timeline order, the
@@ -33,7 +33,20 @@ Entries are a historical record and are not rewritten when later work supersedes
 them. Where a conclusion is retracted, the newer entry says so explicitly; the
 12 August D1/D2 framing is retracted in the 31 August entry.
 
-## `2026-10-18_proposal_issues.tex` — the current note (18 Oct 2026)
+## `2026-10-27_part1_lemma.tex`: Part I of the proposal (27 Oct 2026)
+
+The proposal's Part I, finished. Under `diag(L) = 1`, `B = I − L − 11ᵀ/p`; the note
+proves (a) to (c) from one reflection lemma, gives (b) in exact form (the two sides
+differ by `max{0, λ_k − 1}`) with the `K₄` and 6-cycle counterexamples, and places the
+result as the unit-degree case of the 8 September identity
+`B_n = I − L_sym − uuᵀ`. On the repaired Fig 2 graph, k-means on `B`'s top two
+eigenvectors returns the sectors exactly, and the spectral match holds to the
+solver's degree tolerance. A sweep over the degree penalty shows the combinatorial
+match breaking as degrees spread, while the normalised one stays exact. (c) is stated
+for unit-degree graphs only. 6 pages, one pgfplots figure. Every number is printed by
+`modularity_graph_learning/report_numbers.py --part1`.
+
+## `2026-10-18_proposal_issues.tex`: issues note (18 Oct 2026)
 
 Reply to Prof. Anguluri's October proposal, *Modularity Matrix Approach for Graph
 Learning?*, flagging three issues before execution: Part I(c) holds only for

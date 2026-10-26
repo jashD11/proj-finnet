@@ -1,0 +1,681 @@
+% =====================================================================
+%  Part I: the Laplacian and the modularity matrix under unit degree
+%  Proposal "Modularity Matrix Approach for Graph Learning?" (Oct 2026).
+%  Self-contained: no .bib, no \includegraphics, no external data.
+%  Compiles on Overleaf as-is, and locally with:
+%      tectonic -X compile reports/2026-10-27_part1_lemma.tex
+%  Every number is printed by modularity_graph_learning/report_numbers.py
+%  (sections D to G; run with --part1, and --figdata-part1 for the figure)
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\definecolor{BlueLink}{HTML}{1F4E79}
+\definecolor{BadRed}{HTML}{B3261E}
+\definecolor{LapC}{HTML}{2F6F4E}
+\definecolor{Panel2}{HTML}{F7F5F0}
+\definecolor{Rule}{HTML}{9AA3AD}
+
+\usepackage[colorlinks=true,linkcolor=BlueLink,urlcolor=BlueLink]{hyperref}
+\emergencystretch=3em
+
+\newcommand{\Lap}{\mathbf{L}}
+\newcommand{\Wmat}{\mathbf{W}}
+\newcommand{\Bmat}{\mathbf{B}}
+\newcommand{\Dmat}{\mathbf{D}}
+\newcommand{\Imat}{\mathbf{I}}
+\newcommand{\Smat}{\mathbf{S}}
+\newcommand{\Vmat}{\mathbf{V}}
+\newcommand{\Umat}{\mathbf{U}}
+\newcommand{\dvec}{\mathbf{d}}
+\newcommand{\uvec}{\mathbf{u}}
+\newcommand{\vvec}{\mathbf{v}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\Lsym}{\Lap_{\mathrm{sym}}}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\captionsetup{font=small,labelfont=bf,width=.94\textwidth}
+\setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt,leftmargin=1.3em}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt,leftmargin=1.8em}
+\setlength{\parskip}{3pt}
+\pagestyle{plain}
+
+\newsavebox{\asidebox}
+\newenvironment{aside}[1]
+ {\par\vspace{2.5mm}\begin{lrbox}{\asidebox}%
+  \begin{minipage}{\dimexpr\textwidth-16pt\relax}\small\textbf{#1}\par\vspace{1mm}}
+ {\end{minipage}\end{lrbox}%
+  \noindent\setlength{\fboxsep}{7pt}\setlength{\fboxrule}{.4pt}%
+  \fcolorbox{Rule}{Panel2}{\usebox{\asidebox}}\par\vspace{2.5mm}}
+
+\begin{document}
+
+\begin{center}
+{\Large\textbf{Part I: the Laplacian and the modularity matrix under unit degree}}\\[2mm]
+{\normalsize Jash Dalal \quad$\cdot$\quad 27 October 2026}\\[1mm]
+{\small Part I of \emph{Modularity Matrix Approach for Graph Learning?}\\
+Code in \texttt{modularity\_graph\_learning/}; every number below is printed by
+\texttt{modularity\_graph\_learning/report\_numbers.py}.}
+\end{center}
+\vspace{2mm}
+\hrule
+\vspace{4mm}
+
+% =====================================================================
+\section{Summary}
+% =====================================================================
+
+Under the paper's degree constraint $\operatorname{diag}(\Lap)=\one$, the modularity
+matrix is a reflection of the Laplacian, $\Bmat=\Imat-\Lap-\one\one^\top/p$. Everything
+modularity could say about a learned graph is then already in $\Lap$:
+\begin{enumerate}
+\item \textbf{The lemma holds as stated}, with proofs below (Section~\ref{sec:lemma}).
+  For (b) I give the exact form without the condition $\lambda_k\le 1$: the two sides
+  differ by $\max\{0,\lambda_k-1\}$. Two unit-degree counterexamples show the condition
+  is needed (Section~\ref{sec:role}).
+\item \textbf{The match is a statement about regular graphs, and more generally about
+  normalised operators} (Section~\ref{sec:classify}). With unequal degrees, the
+  combinatorial $\Lap$ and $\Bmat$ stop sharing eigenvectors.
+\item \textbf{On the repaired Fig.~2 graph the prediction holds to within the solver's
+  degree tolerance} (Section~\ref{sec:fig2}). $k$-means on the top two eigenvectors of
+  $\Bmat$ returns the three components exactly, and they are the three sectors.
+\item \textbf{Loosening the degree penalty breaks the algebra but not the partition}
+  (Section~\ref{sec:sweep}). The normalised identity keeps holding exactly throughout.
+\end{enumerate}
+So, inside the paper's framework, modularity adds nothing new. Anything new would
+have to come from the choice of null model (Part II) or from dropping the degree
+constraint (Part III).
+
+% =====================================================================
+\section{Setting}
+% =====================================================================
+
+Let $\Wmat$ be a $p\times p$ symmetric weight matrix with $W_{ij}\ge0$ and $W_{ii}=0$.
+Write $\dvec=\Wmat\one$ for the degrees, $\Dmat=\operatorname{Diag}(\dvec)$,
+$2m=\one^\top\dvec$, the Laplacian $\Lap=\Dmat-\Wmat$ and the modularity matrix
+$\Bmat=\Wmat-\dvec\dvec^\top/2m$. Both satisfy $\Lap\one=\Bmat\one=\mathbf 0$ (for
+$\Bmat$: $\Bmat\one=\dvec-\dvec(\one^\top\dvec)/2m=\mathbf 0$).
+
+Since $\operatorname{diag}(\Lap)=\dvec$, the constraint $\operatorname{diag}(\Lap)=\one$ is
+exactly $\dvec=\one$. Then $\Dmat=\Imat$, $2m=p$, $\Wmat$ is doubly stochastic, and
+\begin{equation}\label{eq:B}
+  \Bmat=\Wmat-\tfrac1p\one\one^\top=\Imat-\Lap-\tfrac1p\one\one^\top .
+\end{equation}
+This is a property of the \emph{learned} graph, not an assumption about the data: every
+graph that Problems (6), (8) and (10) of the paper return satisfies it. The eigenvalues
+of a symmetric doubly stochastic $\Wmat$ lie in $[-1,1]$ (each row of $|\Wmat|$ sums to
+one), so those of $\Lap=\Imat-\Wmat$ lie in $[0,2]$. Write them
+$0=\lambda_1\le\lambda_2\le\dots\le\lambda_p\le2$ and those of $\Bmat$ as
+$\mu_1\ge\dots\ge\mu_p$.
+
+% =====================================================================
+\section{The lemma}\label{sec:lemma}
+% =====================================================================
+
+\begin{lemma}[Reflection]\label{lem:core}
+Under $\dvec=\one$, choose an orthonormal eigenbasis of $\Lap$ that contains
+$\one/\sqrt p$, so $\Lap\vvec_i=\lambda_i\vvec_i$ with $\vvec_1=\one/\sqrt p$ and
+$\vvec_i\perp\one$ for $i\ge2$. Then $\Bmat\vvec_1=\mathbf 0$ and
+$\Bmat\vvec_i=(1-\lambda_i)\vvec_i$ for $i\ge2$. Hence $\Lap$ and $\Bmat$ share
+eigenvectors, and as multisets
+$\operatorname{spec}(\Bmat)=\{0\}\cup\{1-\lambda_i:\ i=2,\dots,p\}$.
+\end{lemma}
+\begin{proof}
+Such a basis exists because $\one$ lies in the kernel of $\Lap$. By \eqref{eq:B},
+$\Bmat\vvec_1=\vvec_1-\Lap\vvec_1-\one(\one^\top\vvec_1)/p
+=\vvec_1-\mathbf 0-\vvec_1=\mathbf 0$. For $i\ge2$, $\one^\top\vvec_i=0$, so
+$\Bmat\vvec_i=\vvec_i-\lambda_i\vvec_i$.
+\end{proof}
+
+So on $\one^\perp$ the spectrum of $\Bmat$ is that of $\Lap$ reflected through
+$\tfrac12$: small Laplacian eigenvalues (cheap cuts) become large modularity
+eigenvalues (good splits). The direction $\one$, which both matrices ignore, maps to
+0 in both.
+
+\begin{proposition}\label{prop:lemma}
+Under $\dvec=\one$:
+\begin{enumerate}[label=(\alph*)]
+\item $\operatorname{rank}(\Lap)=p-k$ if and only if $\Bmat$ has eigenvalue $1$ with
+  multiplicity exactly $k-1$. Moreover $\mu_1\le1$.
+\item For every $k\ge2$,
+  \[
+    \min_{\Vmat^\top\Vmat=\Imat_k}\tr(\Vmat^\top\Lap\Vmat)
+    \;=\;(k-1)-\max_{\Umat^\top\Umat=\Imat_{k-1}}\tr(\Umat^\top\Bmat\Umat)
+    \;+\;\max\{0,\lambda_k-1\}.
+  \]
+  In particular, if $\lambda_k\le1$ the last term vanishes, and the Fan penalty of
+  the paper's Algorithm 1 is, up to the constant $k-1$, minus a relaxed $(k-1)$-way
+  modularity.
+\item $\mu_1=\max\{0,1-\lambda_2\}$.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+(a) For nonnegative weights, $\operatorname{rank}(\Lap)=p-k$ means $\Lap$ has
+eigenvalue 0 with multiplicity $k$, that is, exactly $k-1$ of
+$\lambda_2,\dots,\lambda_p$ are zero. By Lemma~\ref{lem:core} these, and only these,
+give eigenvalue $1-0=1$ of $\Bmat$; the remaining eigenvalue of $\Bmat$, on
+$\vvec_1$, is $0\neq1$. Since every $\lambda_i\ge0$, every $1-\lambda_i\le1$, so
+$\mu_1\le1$.
+
+(b) By Ky Fan's theorem the left side is $\sum_{i\le k}\lambda_i$, and the maximum on
+the right is the sum of the $k-1$ largest elements of the multiset
+$\{0\}\cup\{x_i\}_{i\ge2}$ with $x_i=1-\lambda_i$, where
+$x_2\ge x_3\ge\cdots$. If $x_k\ge0$, those $k-1$ elements are $x_2,\dots,x_k$
+(a tie with the $0$ does not change the sum). If $x_k<0$, then $0>x_k$, and at most
+$k-2$ elements exceed $0$, so the $0$ is among the top $k-1$ and displaces $x_k$. In
+both cases the sum is $\sum_{i=2}^{k}x_i+\max\{0,-x_k\}
+=(k-1)-\sum_{i\le k}\lambda_i+\max\{0,\lambda_k-1\}$ (using $\lambda_1=0$).
+Rearranging gives the identity.
+
+(c) By Lemma~\ref{lem:core}, the largest element of $\{0\}\cup\{1-\lambda_i\}_{i\ge2}$
+is $\max\{0,1-\lambda_2\}$.
+\end{proof}
+
+The optimisers in (b) correspond too: when $\lambda_k\le1$, $\Vmat=[\one/\sqrt p,\ \Umat]$
+with $\Umat=[\vvec_2,\dots,\vvec_k]$. When the rank constraint of Algorithm 1 is fully
+active, $\lambda_1=\dots=\lambda_k=0$, so $\lambda_k\le1$ holds automatically. The
+condition matters for iterates and approximate solutions.
+
+\begin{remark}
+In (c), $\mu_1>0$ is Newman's test for whether a network is divisible at all. So on a
+unit-degree graph the paper's gate $\lambda_2<\tau=1$ would be exactly that test. The
+same identity also discards everything above $\lambda_2=1$, since $\mu_1$ is then 0.
+\end{remark}
+
+% =====================================================================
+\section{The role of $\lambda_k\le1$}\label{sec:role}
+% =====================================================================
+
+For a unit vector $\vvec\perp\one$, \eqref{eq:B} gives
+$\vvec^\top\Bmat\vvec=1-\vvec^\top\Lap\vvec$. So $1-\lambda_i$ is the relaxed
+modularity of splitting the graph along eigenvector $i$, while not splitting (the
+direction $\one$) scores 0. $\lambda_i<1$ means that split beats not splitting;
+$\lambda_i>1$ means it is worse than doing nothing. The condition $\lambda_k\le1$
+therefore says that there are at least $k-1$ directions along which splitting is
+worthwhile. When it fails, the Fan term still asks for $k$ groups while modularity
+prefers fewer, and Proposition~\ref{prop:lemma}(b) measures the disagreement:
+exactly $\lambda_k-1$.
+
+Two unit-degree graphs show the failure (Table~\ref{tab:cex}).
+The complete graph $K_4$ with weights $1/3$ has $\lambda_2=4/3>1$, so it fails
+already at $k=2$. The 6-cycle with weights $1/2$ has
+$\operatorname{spec}(\Lap)=\{0,\,0.5,\,0.5,\,1.5,\,1.5,\,2\}$ and
+$\operatorname{spec}(\Bmat)=\{0.5,\,0.5,\,0,\,-0.5,\,-0.5,\,-1\}$; the identity holds
+for $k=2,3$ and fails at $k=4$, where $\lambda_4=1.5$.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lcccc}
+\toprule
+graph & $k$ & $\lambda_k$ & Fan side $\sum_{i\le k}\lambda_i$ & modularity side $(k-1)-\sum_{i<k}\mu_i$ \\
+\midrule
+$K_4$, weights $1/3$ & 2 & 1.333 & 1.333 & 1.000 \\
+6-cycle, weights $1/2$ & 2 & 0.5 & 0.5 & 0.5 \\
+ & 3 & 0.5 & 1.0 & 1.0 \\
+ & 4 & 1.5 & 2.5 & 2.0 \\
+\bottomrule
+\end{tabular}
+\caption{Proposition~\ref{prop:lemma}(b) on two unit-degree graphs. Where
+$\lambda_k>1$ the sides differ by exactly $\lambda_k-1$.}
+\label{tab:cex}
+\end{table}
+
+% =====================================================================
+\section{When do $\Lap$ and $\Bmat$ share eigenvectors?}\label{sec:classify}
+% =====================================================================
+
+In general, $\Bmat=\Wmat-\dvec\dvec^\top/2m=\Dmat-\Lap-\dvec\dvec^\top/2m$. Each
+matrix has a direction it treats as uninformative: $\Lap$ ignores $\one$ (every node
+moving together), and the null term of $\Bmat$ points along $\dvec$ (nodes moving in
+proportion to degree). The two matrices share eigenvectors when the diagonal
+part is a multiple of the identity and the two uninformative directions agree.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lccc}
+\toprule
+setting & ignored by $\Lap$ & ignored by $\Bmat$ & shared eigenvectors? \\
+\midrule
+regular, $\Dmat=c\Imat$ (includes $\dvec=\one$) & $\one$ & $\one$ &
+  yes: $\Bmat=c\Imat-\Lap-\tfrac cp\one\one^\top$ \\
+normalised, any degrees & $\sqrt{\dvec}$ & $\sqrt{\dvec}$ &
+  yes: $\Bmat_n=\Imat-\Lsym-\uvec\uvec^\top$ \\
+combinatorial, unequal degrees & $\one$ & $\dvec$ & no \\
+\bottomrule
+\end{tabular}
+\caption{Three settings. $\Bmat_n=\Dmat^{-1/2}\Bmat\Dmat^{-1/2}$,
+$\Lsym=\Imat-\Dmat^{-1/2}\Wmat\Dmat^{-1/2}$ and $\uvec=\sqrt{\dvec/2m}$.}
+\label{tab:classify}
+\end{table}
+
+\textbf{Regular.} If $\dvec=c\one$ then $2m=cp$ and
+$\dvec\dvec^\top/2m=c^2\one\one^\top/(cp)=\tfrac cp\one\one^\top$, so
+$\Bmat=c\Imat-\Lap-\tfrac cp\one\one^\top$, and the proof of Lemma~\ref{lem:core}
+goes through with $1$ replaced by $c$: $\operatorname{spec}(\Bmat)=\{0\}\cup\{c-\lambda_i\}$.
+
+\textbf{Normalised.} For any positive degrees, since $\Dmat^{-1/2}\dvec=\sqrt{\dvec}$,
+\[
+  \Dmat^{-1/2}\Bmat\Dmat^{-1/2}=\Dmat^{-1/2}\Wmat\Dmat^{-1/2}
+  -\frac{\Dmat^{-1/2}\dvec\dvec^\top\Dmat^{-1/2}}{2m}=(\Imat-\Lsym)-\uvec\uvec^\top .
+\] Here $\uvec$ is a unit vector and
+$\Lsym\uvec\propto\Dmat^{-1/2}\Lap\one=\mathbf 0$, so the argument of
+Lemma~\ref{lem:core} applies verbatim with $\uvec$ in place of $\one/\sqrt p$. This is
+the identity of the 8 September report, and Part I is its special case $\dvec=\one$,
+where $\uvec=\one/\sqrt p$ and $\Lsym=\Lap$. In particular, part (a) holds for the
+normalised pair \emph{for any degrees}: $\Lsym$ has $k$ zero eigenvalues exactly when
+$\Bmat_n$ has eigenvalue 1 with multiplicity $k-1$.
+
+\textbf{Unequal degrees.} For an eigenvector $\vvec$ of $\Lap$ with eigenvalue
+$\lambda$, $\Bmat\vvec=\Dmat\vvec-\lambda\vvec-\dvec(\dvec^\top\vvec)/2m$. This is a
+multiple of $\vvec$ only if $\Dmat\vvec-\dvec(\dvec^\top\vvec)/2m$ is, which holds when
+$\Dmat=c\Imat$ but fails in general. On a triangle with two tails, degrees
+$(2,2,4,2,1,1)$, the Fiedler vector $\vvec$ of $\Lap$ has
+$\lVert\Bmat\vvec-(\vvec^\top\Bmat\vvec)\vvec\rVert=0.50$, so it is not an eigenvector
+of $\Bmat$. The normalised pair matches to $4.0\times10^{-16}$:
+$\operatorname{spec}(\Lsym)=\{0,\,0.340,\,0.784,\,1.5,\,1.5,\,1.876\}$ and
+$\operatorname{spec}(\Bmat_n)=\{0.660,\,0.216,\,0,\,-0.5,\,-0.5,\,-0.876\}$. On a
+graph this small the sign split of the leading vectors still gives the same
+partition, so different eigenvectors do not automatically mean different clusters.
+
+\begin{aside}{Normalisation is not a free fix}
+Normalising changes coordinates, not the graph, but it does change the statistical
+model. The paper's likelihood uses $\Lap$ itself as a precision matrix,
+$p(\mathbf x)\propto\exp(-\tfrac12\mathbf x^\top\Lap\mathbf x)$; using $\Lsym$ there
+would be a different model. Inside the paper's framework, then, the only place
+modularity can carry information that $\Lap$ does not is the combinatorial pair with
+unequal degrees, that is, after dropping $\operatorname{diag}(\Lap)=\one$ (Part III).
+\end{aside}
+
+% =====================================================================
+\section{Numerical check on the repaired Fig.~2 graph}\label{sec:fig2}
+% =====================================================================
+
+The graph is our Algorithm 1 estimate on the paper's S\&P 500 panel ($p=97$ stocks in
+three sectors, 753 daily returns from 5 January 2016 to 31 December 2018; $k=3$,
+$\eta=300$, degree penalty $\rho=100$), started from the Problem (1) estimate as
+described in the 18 October note. Its three components have 52, 28 and 17 stocks and
+are exactly the Industrials, Consumer Staples and Energy sectors (ARI 1.000).
+
+Our solver enforces $\operatorname{diag}(\Lap)=\one$ by the quadratic penalty
+$\tfrac\rho2\lVert\operatorname{diag}(\Lap)-\one\rVert^2$, not exactly, so the degrees
+are close to one but not equal to it. Table~\ref{tab:fig2} compares each prediction of
+Proposition~\ref{prop:lemma} with what the learned graph gives.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{6.0cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{6.6cm}}
+\toprule
+quantity & Part I predicts & learned graph \\
+\midrule
+degrees $d_i$ & all 1 & in $[1.0012,\,1.0069]$, mean $1.0047$, CV $0.0014$ \\
+$\lVert\Bmat-(\Imat-\Lap-\one\one^\top/p)\rVert_F$ & 0 & $0.0479$ ($1.7\%$ of $\lVert\Bmat\rVert_F$) \\
+three smallest $\lambda_i(\Lap)$ & 0, 0, 0 & all $|\lambda_i|\le1.3\times10^{-15}$; next $0.3779$ \\
+largest $\mu_i(\Bmat)$, (a) & 1, 1, then $1-\lambda_4$ & $1.0052$, $1.0041$, then $0.6274$ \\
+Fan identity (b): $\sum_{i\le3}\lambda_i$ vs $2-\mu_1-\mu_2$ & equal & $6.7\times10^{-16}$ vs $-0.0093$ \\
+$\max_i|\lambda_i-(1-\mu_i)|$ on $\one^\perp$ (96 pairs) & 0 & $0.0059$ (mean $0.0047$) \\
+same, reflecting about $c=\bar d$ instead of 1 & 0 & $0.0020$ (mean $0.0006$) \\
+$\sin$ of largest angle, $\ker\Lap$ vs $\operatorname{span}(\one,\text{top 2 of }\Bmat)$ & 0 & $0.0023$ \\
+$k$-means on top 2 eigenvectors of $\Bmat$: ARI vs components & 1 & 1.000 \\
+\quad ARI vs sectors & & 1.000 \\
+\bottomrule
+\end{tabular}
+\caption{Part I on the repaired Fig.~2 graph.}
+\label{tab:fig2}
+\end{table}
+
+The partition prediction holds exactly: $k$-means on the top two eigenvectors of
+$\Bmat$ recovers the components, which are the sectors. The spectral predictions hold
+to within the size of the degree deviation, and most of that deviation is a uniform
+shift. Every degree sits slightly above one, so the graph is closer to $c$-regular with
+$c=\bar d=1.0047$ than to unit-degree. Reflecting about $c$ instead of 1, as the
+regular row of Table~\ref{tab:classify} prescribes, cuts the largest spectral mismatch
+from $0.0059$ to $0.0020$ and the mean from $0.0047$ to $0.0006$
+(Figure~\ref{fig:spec}). This also explains why $\mu_1,\mu_2$ slightly exceed the
+ceiling of 1 in (a), and why the Fan identity misses by $-0.0093\approx2(1-\bar d)$.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=11cm,height=5.4cm,xlabel={$\lambda_i(\Lap)$ on $\one^\perp$},
+  ylabel={deviation},
+  legend style={at={(0.5,1.03)},anchor=south,font=\footnotesize,draw=none,fill=none,legend columns=1},
+  tick label style={font=\footnotesize},label style={font=\small},
+  scaled y ticks=false,yticklabel style={/pgf/number format/fixed,/pgf/number format/precision=3},
+  ymin=-0.0075,ymax=0.0025,grid=major,grid style={gray!20}]
+\addplot[gray,thin,forget plot] coordinates {(0,0) (1.5,0)};
+\addplot[only marks,BadRed,mark=*,mark size=1.1pt] table[x=lam,y=dev] {
+lam dev
+0.0000 -0.00518
+0.0000 -0.00409
+0.3779 -0.00534
+0.4071 -0.00518
+0.4773 -0.00518
+0.4871 -0.00386
+0.4936 -0.00482
+0.5281 -0.00383
+0.5782 -0.00483
+0.6561 -0.00421
+0.6651 -0.00282
+0.6675 -0.00515
+0.6812 -0.00420
+0.7534 -0.00446
+0.7591 -0.00314
+0.7670 -0.00401
+0.7824 -0.00388
+0.7885 -0.00556
+0.8029 -0.00443
+0.8253 -0.00478
+0.8361 -0.00543
+0.8372 -0.00481
+0.8649 -0.00531
+0.8741 -0.00514
+0.8810 -0.00363
+0.8916 -0.00496
+0.9160 -0.00577
+0.9300 -0.00514
+0.9432 -0.00363
+0.9515 -0.00507
+0.9629 -0.00390
+0.9641 -0.00502
+0.9746 -0.00446
+0.9853 -0.00371
+0.9888 -0.00487
+0.9982 -0.00525
+1.0030 -0.00480
+1.0066 -0.00567
+1.0113 -0.00266
+1.0247 -0.00571
+1.0341 -0.00450
+1.0383 -0.00414
+1.0390 -0.00419
+1.0605 -0.00540
+1.0607 -0.00546
+1.0742 -0.00473
+1.0774 -0.00432
+1.0791 -0.00554
+1.0801 -0.00389
+1.0955 -0.00585
+1.0977 -0.00476
+1.0994 -0.00588
+1.1085 -0.00529
+1.1145 -0.00547
+1.1190 -0.00494
+1.1256 -0.00369
+1.1278 -0.00495
+1.1310 -0.00338
+1.1394 -0.00500
+1.1453 -0.00574
+1.1483 -0.00497
+1.1570 -0.00539
+1.1606 -0.00543
+1.1635 -0.00401
+1.1685 -0.00587
+1.1714 -0.00403
+1.1766 -0.00498
+1.1834 -0.00524
+1.1862 -0.00508
+1.1928 -0.00415
+1.1954 -0.00510
+1.1963 -0.00569
+1.2072 -0.00493
+1.2109 -0.00334
+1.2160 -0.00581
+1.2225 -0.00489
+1.2279 -0.00504
+1.2335 -0.00589
+1.2388 -0.00479
+1.2431 -0.00471
+1.2506 -0.00402
+1.2606 -0.00412
+1.2694 -0.00532
+1.2698 -0.00352
+1.2838 -0.00467
+1.2887 -0.00456
+1.2944 -0.00443
+1.3225 -0.00418
+1.3338 -0.00518
+1.3472 -0.00499
+1.3598 -0.00286
+1.3778 -0.00378
+1.3885 -0.00420
+1.4148 -0.00480
+1.4458 -0.00506
+1.4559 -0.00263
+};
+\addlegendentry{$(1-\mu_i)-\lambda_i$: reflection about 1 (Part I)}
+\addplot[only marks,LapC,mark=*,mark size=1.1pt] table[x=lam,y expr=\thisrow{dev}+0.0047] {
+lam dev
+0.0000 -0.00518
+0.0000 -0.00409
+0.3779 -0.00534
+0.4071 -0.00518
+0.4773 -0.00518
+0.4871 -0.00386
+0.4936 -0.00482
+0.5281 -0.00383
+0.5782 -0.00483
+0.6561 -0.00421
+0.6651 -0.00282
+0.6675 -0.00515
+0.6812 -0.00420
+0.7534 -0.00446
+0.7591 -0.00314
+0.7670 -0.00401
+0.7824 -0.00388
+0.7885 -0.00556
+0.8029 -0.00443
+0.8253 -0.00478
+0.8361 -0.00543
+0.8372 -0.00481
+0.8649 -0.00531
+0.8741 -0.00514
+0.8810 -0.00363
+0.8916 -0.00496
+0.9160 -0.00577
+0.9300 -0.00514
+0.9432 -0.00363
+0.9515 -0.00507
+0.9629 -0.00390
+0.9641 -0.00502
+0.9746 -0.00446
+0.9853 -0.00371
+0.9888 -0.00487
+0.9982 -0.00525
+1.0030 -0.00480
+1.0066 -0.00567
+1.0113 -0.00266
+1.0247 -0.00571
+1.0341 -0.00450
+1.0383 -0.00414
+1.0390 -0.00419
+1.0605 -0.00540
+1.0607 -0.00546
+1.0742 -0.00473
+1.0774 -0.00432
+1.0791 -0.00554
+1.0801 -0.00389
+1.0955 -0.00585
+1.0977 -0.00476
+1.0994 -0.00588
+1.1085 -0.00529
+1.1145 -0.00547
+1.1190 -0.00494
+1.1256 -0.00369
+1.1278 -0.00495
+1.1310 -0.00338
+1.1394 -0.00500
+1.1453 -0.00574
+1.1483 -0.00497
+1.1570 -0.00539
+1.1606 -0.00543
+1.1635 -0.00401
+1.1685 -0.00587
+1.1714 -0.00403
+1.1766 -0.00498
+1.1834 -0.00524
+1.1862 -0.00508
+1.1928 -0.00415
+1.1954 -0.00510
+1.1963 -0.00569
+1.2072 -0.00493
+1.2109 -0.00334
+1.2160 -0.00581
+1.2225 -0.00489
+1.2279 -0.00504
+1.2335 -0.00589
+1.2388 -0.00479
+1.2431 -0.00471
+1.2506 -0.00402
+1.2606 -0.00412
+1.2694 -0.00532
+1.2698 -0.00352
+1.2838 -0.00467
+1.2887 -0.00456
+1.2944 -0.00443
+1.3225 -0.00418
+1.3338 -0.00518
+1.3472 -0.00499
+1.3598 -0.00286
+1.3778 -0.00378
+1.3885 -0.00420
+1.4148 -0.00480
+1.4458 -0.00506
+1.4559 -0.00263
+};
+\addlegendentry{$(c-\mu_i)-\lambda_i$: reflection about $c=\bar d=1.0047$}
+\end{axis}
+\end{tikzpicture}
+\caption{How far each of the 96 eigenvalue pairs on $\one^\perp$ is from Part I's
+prediction $\mu_i=1-\lambda_i$, on the repaired Fig.~2 graph (eigenvalues of $\Bmat$
+taken in decreasing order, of $\Lap$ in increasing order). The offset of about
+$-0.005$ is the mean degree's excess over one; once it is accounted for, what is left
+is the spread of the degrees around their mean.}
+\label{fig:spec}
+\end{figure}
+
+% =====================================================================
+\section{Loosening the degree rule}\label{sec:sweep}
+% =====================================================================
+
+To see the match fail as degrees spread, I reran Algorithm 1 with the same data, $k$,
+$\eta$ and start, lowering only the degree penalty $\rho$ (Table~\ref{tab:sweep}). The
+rank constraint keeps holding: every run returns three components and no isolated
+stock.
+
+\begin{table}[h]
+\centering\small
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{rcccccccc}
+\toprule
+$\rho$ & degree range & degree CV & components & rel.\ residual & $\mu_1,\mu_2$ of $\Bmat$ & $\sin$ & ARI vs comp.\ & $\mu_1,\mu_2$ of $\Bmat_n$ \\
+\midrule
+100 & [1.001, 1.007] & 0.0014 & 52/28/17 & 0.017 & 1.005, 1.004 & 0.002 & 1.000 & 1, 1 \\
+30  & [1.004, 1.023] & 0.0047 & 52/28/17 & 0.056 & 1.017, 1.013 & 0.008 & 1.000 & 1, 1 \\
+10  & [1.011, 1.064] & 0.0129 & 52/28/17 & 0.152 & 1.048, 1.038 & 0.021 & 1.000 & 1, 1 \\
+3   & [1.031, 1.184] & 0.0344 & 52/28/17 & 0.392 & 1.139, 1.110 & 0.058 & 1.000 & 1, 1 \\
+1   & [1.060, 1.421] & 0.0700 & 49/31/17 & 0.730 & 1.318, 1.254 & 0.123 & 1.000 & 1, 1 \\
+0.3 & [1.109, 1.881] & 0.1265 & 52/28/17 & 1.098 & 1.647, 1.491 & 0.236 & 1.000 & 1, 1 \\
+\bottomrule
+\end{tabular}
+\caption{Algorithm 1 at weaker degree penalties. Relative residual is
+$\lVert\Bmat-(\Imat-\Lap-\one\one^\top/p)\rVert_F/\lVert\Bmat\rVert_F$; $\sin$ is the
+largest principal angle between $\ker\Lap$ and $\operatorname{span}(\one,\text{top 2
+of }\Bmat)$; ARI compares $k$-means on the top two eigenvectors of $\Bmat$ with the
+components. The eigenvalues of $\Bmat_n$ equal 1 to six decimals in every row.}
+\label{tab:sweep}
+\end{table}
+
+Three things stand out.
+\begin{itemize}
+\item \textbf{The algebra of Part I degrades steadily.} As the degree CV grows from
+  $0.0014$ to $0.126$, the residual of \eqref{eq:B} grows from $1.7\%$ to more than the
+  size of $\Bmat$ itself, the top eigenvalues of $\Bmat$ climb from $1.005$ to $1.65$,
+  well past the ceiling of 1 in (a), and the subspaces drift apart.
+\item \textbf{The normalised identity does not degrade at all.} $\Bmat_n$ keeps
+  eigenvalue 1 with multiplicity exactly $k-1=2$ at every $\rho$, as
+  Section~\ref{sec:classify} predicts for any degrees.
+\item \textbf{The partition survives.} Even at $\rho=0.3$, $k$-means on the
+  eigenvectors of the combinatorial $\Bmat$ returns the components exactly. With three
+  components and no edges between them, the drift ($\sin\le0.24$) is not large enough
+  to move any stock. I do not have a proof that this always happens; it is what these
+  graphs show.
+\end{itemize}
+
+One run is out of line. At $\rho=1$ the components are 49/31/17: three Industrials
+stocks, EFX, RSG and WM, join the Consumer Staples component (ARI against sectors
+0.896). RSG and WM are waste-management companies, usually regarded as defensive, so
+the grouping is plausible, but I have not tested it further; the runs at $\rho=3$ and
+$\rho=0.3$ return the sectors exactly. It is a property of the learned graph, not of the Part I
+comparison, which still matches the components exactly in that row.
+
+% =====================================================================
+\section{Scope of (c)}\label{sec:scope}
+% =====================================================================
+
+Part~(c) is exact under unit degree, but the paper's crash indicator comes from its
+time-varying estimator, Problem (11), which has no degree constraint. As reported in
+the 18 October note, our 243 learned FAAMUNG graphs have mean degree 2.13 and degree
+CV 0.305, and $\lambda_2\ge1$ in 58\% of windows. On those graphs
+$\lambda_{\max}(\Bmat_t)$ and $\lambda_2(\Lap_t)$ are different quantities, and the
+sweep above shows how quickly the combinatorial match degrades once degrees spread
+(the FAAMUNG CV is more than twice the largest in Table~\ref{tab:sweep}). I have
+stated (c) for unit-degree graphs only. If a modularity indicator on the time-varying
+graphs is still of interest, the normalised version
+$\lambda_{\max}(\Bmat_n)=\max\{0,1-\lambda_2(\Lsym)\}$ holds for any degrees and could
+be the version to test; whether that is worth doing is your call.
+
+% =====================================================================
+\section{Status}
+% =====================================================================
+
+\begin{center}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.5cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{7.8cm}}
+\toprule
+claim & status & evidence \\
+\midrule
+(a) rank $\Leftrightarrow$ eigenvalue-1 multiplicity & proved; holds & Proposition~\ref{prop:lemma}; tests on 1 to 4 components; Fig.~2 graph gives $1.0052,1.0041$ (degree tolerance) \\
+(b) Fan $=$ relaxed modularity & proved; holds under $\lambda_k\le1$ & exact form with $\max\{0,\lambda_k-1\}$; two counterexamples; Fig.~2 gap $0.0093$ \\
+(c) $\mu_1=\max\{0,1-\lambda_2\}$ & proved; unit degree only & does not apply to Problem (11) graphs (Section~\ref{sec:scope}) \\
+regular / normalised / unequal & proved & Table~\ref{tab:classify}; triangle-with-tails example; $\Bmat_n$ exact in every sweep run \\
+$k$-means on $\Bmat$ recovers the components & reproduced & ARI 1.000 on Fig.~2 and at every $\rho$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Deviations recorded.} The degree constraint is a quadratic penalty, so the
+learned degrees are $1.0012$ to $1.0069$ rather than 1, and every spectral comparison
+above carries that tolerance. The paper does not report $\eta$; $\eta=300$ is ours.
+Algorithm 1 starts from the Problem (1) estimate, not the uniform graph (18 October
+note). The $\rho$ sweep is ours, not the paper's.
+
+\textbf{Reproducing.} \texttt{python report\_numbers.py -{}-part1} prints sections D to G of
+its output from the committed caches in a few seconds; \texttt{python degree\_sweep.py 30 10 3 1
+0.3} rebuilds the sweep; \texttt{tests/test\_lemma.py} (25 tests) checks the lemma, the
+counterexamples and the classification on random graphs.
+
+\textbf{Next.} With Part I settled, I would suggest Part II next, since it does not
+depend on the Part III repair: it starts with the invariance
+$\tr(\Lap\Smat)=\tr(\Lap\mathbf J\Smat\mathbf J)$ and a synthetic one-factor check of
+when unequal betas start to mislabel clusters. The order is your call.
+
+\end{document}
