@@ -91,6 +91,51 @@ def test_b_fails_on_unit_degree_complete_graph():
     assert not np.isclose(lhs, rhs)
 
 
+def test_b_on_six_cycle_holds_until_lambda_k_exceeds_1():
+    """6-cycle, weights 1/2: eig(L) = 0, .5, .5, 1.5, 1.5, 2. (b) holds for k = 2, 3, fails at k = 4."""
+    p = 6
+    W = np.zeros((p, p))
+    for i in range(p):
+        W[i, (i + 1) % p] = W[(i + 1) % p, i] = 0.5
+    L, B = laplacian(W), modularity_matrix(W)
+    lam, mu = eig(L), eig(B)[::-1]
+    assert np.allclose(lam, [0, 0.5, 0.5, 1.5, 1.5, 2.0], atol=TOL)
+    for k in (2, 3):
+        assert np.isclose(lam[:k].sum(), (k - 1) - mu[:k - 1].sum(), atol=TOL)
+    assert np.isclose(lam[:4].sum(), 2.5) and np.isclose(3 - mu[:3].sum(), 2.0)
+
+
+@pytest.mark.parametrize("c", [0.5, 2.0, 3.0])
+def test_c_regular_graph_reflects_about_c(c):
+    """Every degree c: B = cI - L - (c/p)11', so eig(B) on 1-perp is c - eig(L)."""
+    rng = np.random.default_rng(5)
+    p = 10
+    W = c * random_unit_degree(p, rng)
+    L, B = laplacian(W), modularity_matrix(W)
+    assert np.allclose(B, c * np.eye(p) - L - (c / p) * np.ones((p, p)), atol=TOL)
+    lam = eig(L)
+    assert np.allclose(eig(B), np.sort(np.concatenate([[0.0], c - lam[1:]])), atol=TOL)
+
+
+def test_unequal_degrees_break_shared_eigenvectors():
+    """Triangle plus tails, d = (2, 2, 4, 2, 1, 1): L's Fiedler vector is not an
+    eigenvector of B, while L_sym and B_n share eigenvectors exactly."""
+    W = np.zeros((6, 6))
+    for a, b in [(0, 1), (0, 2), (1, 2), (2, 3), (3, 4), (2, 5)]:
+        W[a, b] = W[b, a] = 1.0
+    d = W.sum(axis=1)
+    assert d.tolist() == [2, 2, 4, 2, 1, 1]
+    L, B = laplacian(W), modularity_matrix(W)
+    v = np.linalg.eigh(L)[1][:, 1]
+    assert np.linalg.norm(B @ v - (v @ B @ v) * v) > 0.4
+    Dm = np.diag(d ** -0.5)
+    Lsym, Bn = np.eye(6) - Dm @ W @ Dm, Dm @ B @ Dm
+    _, U = np.linalg.eigh(Lsym)
+    for i in range(6):
+        u = U[:, i]
+        assert np.linalg.norm(Bn @ u - (u @ Bn @ u) * u) < 1e-10
+
+
 @pytest.mark.parametrize("seed", range(5))
 def test_c_lambda_max_B(seed):
     rng = np.random.default_rng(seed)
