@@ -419,6 +419,29 @@ Written up for the professor in \texttt{reports/2026-10-18\_proposal\_issues.tex
 code, lemma tests and the number-checking script in
 \texttt{modularity\_graph\_learning/}.
 
+\logday{27 October: Part I finished}
+
+\textbf{The lemma, proved.} Under $\operatorname{diag}(\mathbf{L})=\mathbf{1}$,
+$\mathbf{B}=\mathbf{I}-\mathbf{L}-\mathbf{1}\mathbf{1}^\top/p$, so (a), (b) and (c) follow
+from one reflection lemma. Part (b) holds in the exact form
+$\sum_{i\le k}\lambda_i=(k-1)-\sum_{i<k}\mu_i+\max\{0,\lambda_k-1\}$, so the
+condition $\lambda_k\le1$ is exactly what removes the correction; the $K_4$ and 6-cycle
+counterexamples show it.
+
+\textbf{On the repaired Fig.~2 graph} the prediction holds to the solver's degree
+tolerance: degrees $1.0012$ to $1.0069$, $\mathbf{B}$'s top eigenvalues $1.0052$ and
+$1.0041$ (Part I says 1), and $k$-means on them returns the sectors exactly. Most of
+the mismatch is the mean degree $1.0047$: reflecting about it instead of 1 cuts the
+spectral gap from $0.0059$ to $0.0020$.
+
+\textbf{Loosening the degree penalty} ($\rho$ from 100 to 0.3) breaks the algebra
+(residual $1.7\%$ to $110\%$, $\mu_1(\mathbf{B})$ up to $1.65$) but not the partition,
+and the normalised $\mathbf{B}_n$ keeps eigenvalue 1 twice at every $\rho$, as the
+8 September identity predicts.
+
+Written up in \texttt{reports/2026-10-27\_part1\_lemma.tex}; (c) stated for unit
+degree only, pending the professor's reply.
+
 \logday{\textcolor{gray}{dd Month: next entry here}}
 
 \vspace{4mm}

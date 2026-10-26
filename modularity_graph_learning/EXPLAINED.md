@@ -200,31 +200,54 @@ its own `python3` fallback. It now resolves the interpreter once, up front.
 
 ---
 
-## 4. What has been carried out for Part I
+## 4. What has been carried out for Part I (finished 27 October)
 
-1. **Maths checked by hand.** (a), (b), (c) are correct as algebra; the counterexample for (b)
-   is the all-connected degree-1 network.
-2. **Automated tests** (`tests/test_lemma.py`, 20 tests, all passing, run by `run_tests.sh`):
-   `B = I − L − (1/p)11ᵀ` and the 1 − λ spectrum on random degree-1 networks; (a) for 1 to 4
-   pieces; (b) when `λ_k ≤ 1`; the counterexample; (c) with λ₂ both below and above 1; and the
-   normalised identity `B_n = I − L_sym − uuᵀ` for any network, which reduces to Part I when every
-   degree is 1 (so Part I is a special case of the 8 September report's result).
-3. **Fig 2 made meaningful** (Section 3.1): the prerequisite for the numerical task.
-4. **Early numerical check, on the old Fig 2 network** (before repair): degrees 0.997 to 1.007;
-   `‖B − (I − L − 11ᵀ/p)‖ = 0.044`; `B` had eigenvalue ≈1.003 twice (= k − 1); k-means on `B`'s top
-   2 eigenvectors reproduced the 3 pieces exactly. The maths showed up in real output, but those
-   pieces were not sectors, so this must be redone on the repaired network.
-5. **Scope of (c) corrected** (Section 3.5) and reported in the note to the prof.
+Write-up: `reports/2026-10-27_part1_lemma.tex` (6 pages). Numbers: `report_numbers.py --part1`.
 
-## 5. What Part I still needs
+1. **The proofs.** All three claims follow from one fact: on every direction except
+   "everyone together", `B` gives `1 − λ` where `L` gives `λ`. (a) and (c) drop straight out.
+   For (b) there is now an exact version with no condition: the two sides differ by
+   `max{0, λ_k − 1}`. So `λ_k ≤ 1` is exactly what makes the difference zero.
+2. **Two counterexamples.** The all-connected 4-stock network (weights ⅓) fails at k = 2. The
+   6-stock ring (weights ½) works for k = 2 and 3 and fails at k = 4, where `λ_4 = 1.5`. In
+   both, the gap is exactly `λ_k − 1`.
+3. **When `L` and `B` agree.** They agree when all degrees are equal (`B = cI − L − (c/p)11ᵀ`), and
+   for the degree-normalised versions with any degrees (the 8 September identity, of which Part
+   I is the special case). They disagree for the plain matrices with unequal degrees. Tiny
+   example: a triangle with two tails, where `L`'s split direction is not a direction of `B`
+   (mismatch 0.50) but the normalised pair matches exactly.
+4. **The check on the repaired Fig 2 network.** Algorithm 1 only *nudges* degrees towards 1 (a
+   penalty, not a hard rule), so they come out between 1.0012 and 1.0069, not exactly 1.
+   Accordingly:
+   - `B` matches `I − L − 11ᵀ/p` to within 1.7%.
+   - `B`'s two top eigenvalues are 1.0052 and 1.0041 instead of exactly 1.
+   - k-means on `B`'s top two eigenvectors gives the three sectors exactly (ARI 1.000).
 
-1. **Rerun the numerical check on the repaired Fig 2 network** (`part1_checks.py`): match of `B`
-   to `I − L − 11ᵀ/p`, eigenvalue 1 twice, k-means on `B`'s top 2 eigenvectors versus the three
-   sector pieces.
-2. **Show the match breaking as degrees spread**: loosen the degree penalty step by step and
-   measure the mismatch, making "fails for general degrees" visible.
-3. **Write the Part I note** (`reports/YYYY-MM-DD_part1_lemma.tex`): lemma and proofs, the
-   counterexample, the link to the 8 September result, the corrected scope of (c), the
-   numerical section, and one figure of `L`'s eigenvalues against 1 minus `B`'s.
+   Most of the small mismatch is the average degree (1.0047) being a hair above 1: measuring
+   the reflection around 1.0047 instead of 1 cuts the biggest gap from 0.0059 to 0.0020.
+5. **Loosening the degree rule.** Algorithm 1 was rerun with the degree penalty `ρ` lowered from
+   100 to 0.3 (`degree_sweep.py`, a few minutes per run). The degrees spread out (largest
+   reaches 1.88). Three things happened:
+   - **The algebra breaks.** The mismatch grows from 1.7% to 110%, and `B`'s top eigenvalue
+     climbs to 1.65.
+   - **The partition does not break.** k-means on `B` still finds the three pieces exactly.
+   - **The normalised `B` stays exact.** It keeps eigenvalue 1 exactly twice at every `ρ`.
 
-These wait on the professor's reply on (c), which may change how the note is framed.
+   One oddity: at `ρ = 1`, three Industrials stocks (EFX and the waste companies RSG and WM)
+   land in the Consumer Staples piece. This is a property of that learned graph; the runs
+   either side give the exact sectors.
+6. **Tests.** `tests/test_lemma.py` has 25 tests. New ones cover the ring counterexample, equal
+   degrees other than 1, and the triangle-with-tails case.
+7. **Scope of (c).** As reported on 18 October, (c) is stated for unit-degree graphs only. The
+   note adds that the normalised version, `λ_max(B_n) = max{0, 1 − λ₂(L_sym)}`, holds for any
+   degrees, if a modularity indicator on the time-varying graphs is still wanted.
+
+**Bottom line:** under the paper's degree rule, modularity adds nothing new. Anything new has to
+come from the null model (Part II) or from dropping the degree rule (Part III).
+
+## 5. What comes next
+
+Part I is done; its framing of (c) may need a touch-up once the professor replies to the 18
+October note. Part II (the market factor as a hidden null model) does not depend on that reply
+and is the natural next step. Part III waits on the professor's choice of repair for the
+unbounded objective, and needs a Python port of SGL.
