@@ -1,0 +1,8 @@
+worker 0: queue of 120 jobs
+START [1/120] real/S/alg1
+DONE [1/120] real/S/alg1 88s
+START [7/120] real/resid-SPX/alg1
+DONE [7/120] real/resid-SPX/alg1 244s
+START [11/120] real/RMT/alg1
+DONE [11/120] real/RMT/alg1 200s
+worker 0 FINISHED

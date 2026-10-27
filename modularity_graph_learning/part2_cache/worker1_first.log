@@ -1,0 +1,122 @@
+worker 1/2: 60 jobs
+START [1/60] real/S/prob1
+DONE [1/60] real/S/prob1 0s
+START [2/60] real/JSJ/prob1
+DONE [2/60] real/JSJ/prob1 0s
+START [3/60] real/S-mode/prob1
+DONE [3/60] real/S-mode/prob1 0s
+START [4/60] real/resid-SPX/prob1
+DONE [4/60] real/resid-SPX/prob1 0s
+START [5/60] real/resid-EW/prob1
+DONE [5/60] real/resid-EW/prob1 0s
+START [6/60] real/RMT/prob1
+DONE [6/60] real/RMT/prob1 0s
+START [7/60] syn/equal/0/seed0/S/prob1
+DONE [7/60] syn/equal/0/seed0/S/prob1 0s
+START [8/60] syn/equal/0/seed0/S-mode/prob1
+DONE [8/60] syn/equal/0/seed0/S-mode/prob1 0s
+START [9/60] syn/equal/0/seed0/oracle/prob1
+DONE [9/60] syn/equal/0/seed0/oracle/prob1 0s
+START [10/60] syn/equal/0/seed1/S/prob1
+DONE [10/60] syn/equal/0/seed1/S/prob1 0s
+START [11/60] syn/equal/0/seed1/S-mode/prob1
+DONE [11/60] syn/equal/0/seed1/S-mode/prob1 0s
+START [12/60] syn/equal/0/seed1/oracle/prob1
+DONE [12/60] syn/equal/0/seed1/oracle/prob1 0s
+START [13/60] syn/aligned/0.2/seed0/S/prob1
+DONE [13/60] syn/aligned/0.2/seed0/S/prob1 0s
+START [14/60] syn/aligned/0.2/seed0/S-mode/prob1
+DONE [14/60] syn/aligned/0.2/seed0/S-mode/prob1 0s
+START [15/60] syn/aligned/0.2/seed0/oracle/prob1
+DONE [15/60] syn/aligned/0.2/seed0/oracle/prob1 0s
+START [16/60] syn/aligned/0.2/seed1/S/prob1
+DONE [16/60] syn/aligned/0.2/seed1/S/prob1 0s
+START [17/60] syn/aligned/0.2/seed1/S-mode/prob1
+DONE [17/60] syn/aligned/0.2/seed1/S-mode/prob1 0s
+START [18/60] syn/aligned/0.2/seed1/oracle/prob1
+DONE [18/60] syn/aligned/0.2/seed1/oracle/prob1 0s
+START [19/60] syn/aligned/0.4/seed0/S/prob1
+DONE [19/60] syn/aligned/0.4/seed0/S/prob1 0s
+START [20/60] syn/aligned/0.4/seed0/S-mode/prob1
+DONE [20/60] syn/aligned/0.4/seed0/S-mode/prob1 0s
+START [21/60] syn/aligned/0.4/seed0/oracle/prob1
+DONE [21/60] syn/aligned/0.4/seed0/oracle/prob1 0s
+START [22/60] syn/aligned/0.4/seed1/S/prob1
+DONE [22/60] syn/aligned/0.4/seed1/S/prob1 0s
+START [23/60] syn/aligned/0.4/seed1/S-mode/prob1
+DONE [23/60] syn/aligned/0.4/seed1/S-mode/prob1 0s
+START [24/60] syn/aligned/0.4/seed1/oracle/prob1
+DONE [24/60] syn/aligned/0.4/seed1/oracle/prob1 0s
+START [25/60] syn/aligned/0.6/seed0/S/prob1
+DONE [25/60] syn/aligned/0.6/seed0/S/prob1 0s
+START [26/60] syn/aligned/0.6/seed0/S-mode/prob1
+DONE [26/60] syn/aligned/0.6/seed0/S-mode/prob1 0s
+START [27/60] syn/aligned/0.6/seed0/oracle/prob1
+DONE [27/60] syn/aligned/0.6/seed0/oracle/prob1 0s
+START [28/60] syn/aligned/0.6/seed1/S/prob1
+DONE [28/60] syn/aligned/0.6/seed1/S/prob1 0s
+START [29/60] syn/aligned/0.6/seed1/S-mode/prob1
+DONE [29/60] syn/aligned/0.6/seed1/S-mode/prob1 0s
+START [30/60] syn/aligned/0.6/seed1/oracle/prob1
+DONE [30/60] syn/aligned/0.6/seed1/oracle/prob1 0s
+START [31/60] syn/aligned/0.8/seed0/S/prob1
+DONE [31/60] syn/aligned/0.8/seed0/S/prob1 0s
+START [32/60] syn/aligned/0.8/seed0/S-mode/prob1
+DONE [32/60] syn/aligned/0.8/seed0/S-mode/prob1 0s
+START [33/60] syn/aligned/0.8/seed0/oracle/prob1
+DONE [33/60] syn/aligned/0.8/seed0/oracle/prob1 0s
+START [34/60] syn/aligned/0.8/seed1/S/prob1
+DONE [34/60] syn/aligned/0.8/seed1/S/prob1 0s
+START [35/60] syn/aligned/0.8/seed1/S-mode/prob1
+DONE [35/60] syn/aligned/0.8/seed1/S-mode/prob1 0s
+START [36/60] syn/aligned/0.8/seed1/oracle/prob1
+DONE [36/60] syn/aligned/0.8/seed1/oracle/prob1 0s
+START [37/60] syn/cross/0.2/seed0/S/prob1
+DONE [37/60] syn/cross/0.2/seed0/S/prob1 0s
+START [38/60] syn/cross/0.2/seed0/S-mode/prob1
+DONE [38/60] syn/cross/0.2/seed0/S-mode/prob1 0s
+START [39/60] syn/cross/0.2/seed0/oracle/prob1
+DONE [39/60] syn/cross/0.2/seed0/oracle/prob1 0s
+START [40/60] syn/cross/0.2/seed1/S/prob1
+DONE [40/60] syn/cross/0.2/seed1/S/prob1 0s
+START [41/60] syn/cross/0.2/seed1/S-mode/prob1
+DONE [41/60] syn/cross/0.2/seed1/S-mode/prob1 0s
+START [42/60] syn/cross/0.2/seed1/oracle/prob1
+DONE [42/60] syn/cross/0.2/seed1/oracle/prob1 0s
+START [43/60] syn/cross/0.4/seed0/S/prob1
+DONE [43/60] syn/cross/0.4/seed0/S/prob1 0s
+START [44/60] syn/cross/0.4/seed0/S-mode/prob1
+DONE [44/60] syn/cross/0.4/seed0/S-mode/prob1 0s
+START [45/60] syn/cross/0.4/seed0/oracle/prob1
+DONE [45/60] syn/cross/0.4/seed0/oracle/prob1 0s
+START [46/60] syn/cross/0.4/seed1/S/prob1
+DONE [46/60] syn/cross/0.4/seed1/S/prob1 0s
+START [47/60] syn/cross/0.4/seed1/S-mode/prob1
+DONE [47/60] syn/cross/0.4/seed1/S-mode/prob1 0s
+START [48/60] syn/cross/0.4/seed1/oracle/prob1
+DONE [48/60] syn/cross/0.4/seed1/oracle/prob1 0s
+START [49/60] syn/cross/0.6/seed0/S/prob1
+DONE [49/60] syn/cross/0.6/seed0/S/prob1 0s
+START [50/60] syn/cross/0.6/seed0/S-mode/prob1
+DONE [50/60] syn/cross/0.6/seed0/S-mode/prob1 0s
+START [51/60] syn/cross/0.6/seed0/oracle/prob1
+DONE [51/60] syn/cross/0.6/seed0/oracle/prob1 0s
+START [52/60] syn/cross/0.6/seed1/S/prob1
+DONE [52/60] syn/cross/0.6/seed1/S/prob1 0s
+START [53/60] syn/cross/0.6/seed1/S-mode/prob1
+DONE [53/60] syn/cross/0.6/seed1/S-mode/prob1 0s
+START [54/60] syn/cross/0.6/seed1/oracle/prob1
+DONE [54/60] syn/cross/0.6/seed1/oracle/prob1 0s
+START [55/60] syn/cross/0.8/seed0/S/prob1
+DONE [55/60] syn/cross/0.8/seed0/S/prob1 0s
+START [56/60] syn/cross/0.8/seed0/S-mode/prob1
+DONE [56/60] syn/cross/0.8/seed0/S-mode/prob1 0s
+START [57/60] syn/cross/0.8/seed0/oracle/prob1
+DONE [57/60] syn/cross/0.8/seed0/oracle/prob1 0s
+START [58/60] syn/cross/0.8/seed1/S/prob1
+DONE [58/60] syn/cross/0.8/seed1/S/prob1 0s
+START [59/60] syn/cross/0.8/seed1/S-mode/prob1
+DONE [59/60] syn/cross/0.8/seed1/S-mode/prob1 0s
+START [60/60] syn/cross/0.8/seed1/oracle/prob1
+DONE [60/60] syn/cross/0.8/seed1/oracle/prob1 0s
+worker 1 FINISHED

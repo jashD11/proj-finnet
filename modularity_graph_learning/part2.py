@@ -167,10 +167,12 @@ def clusters(L, learner, k=K):
 
 
 def beta_buckets(b, n=K):
-    """Beta terciles; a single bucket when all loadings are (numerically) equal."""
-    if np.ptp(b) < 1e-12:
-        return np.zeros(len(b), dtype=int)
-    return pd.qcut(b, n, labels=False, duplicates="drop")
+    """Beta groups: one per distinct value when there are at most n of them (the
+    synthetic designs), else terciles (real loadings)."""
+    vals, idx = np.unique(np.round(b, 12), return_inverse=True)
+    if len(vals) <= n:
+        return idx
+    return pd.qcut(b, n, labels=False)
 
 
 def within_sector_beta_ratio(W, b, sector):

@@ -1,17 +1,18 @@
 """
 Re-derive every number quoted in the proposal reports:
     reports/2026-10-18_proposal_issues.tex     (sections A, B, C)
-    reports/2026-10-27_part1_lemma.tex         (sections D, E, F, G)
+    reports/2026-10-27_part1_lemma.tex         (sections D to G: Part I; H to L: Part II)
 
 Section C needs the fig2_init_check.py caches (run it for uniform/problem1 x 1/default).
-Section G needs the degree_sweep.py caches.
+Section G needs the degree_sweep.py caches. Sections I to K need the part2_runs.py and
+part2_threshold.py caches (part2_cache/); section L relearns its Problem 1 graphs (seconds).
 
 Same discipline as modularity_indicator/report_numbers.py: the reports
 transcribe this script's output and nothing else. Read-only apart from a cache
 of the Problem 1 graph in this folder (rebuilt if deleted).
 
-Run:  python report_numbers.py [--part1] [--figdata] [--figdata-part1]
-      (--part1 prints sections D to G only)
+Run:  python report_numbers.py [--part1 | --part2] [--figdata] [--figdata-part1]
+      (--part1 prints sections D to G only, --part2 sections H to L only)
 """
 
 import io
@@ -213,6 +214,130 @@ def part1(S, sector, tickers):
           "of L and span(1, top k-1 of B). B_n = D^-1/2 B D^-1/2.")
 
 
+def flip_summary(rows):
+    """Mean ARI vs sectors / vs beta groups over seeds, and how many seeds cluster by beta."""
+    a_s = np.array([r["ari_sector"] for r in rows])
+    a_b = np.array([r["ari_beta"] for r in rows])
+    return a_s.mean(), a_b.mean(), int(np.sum(a_b > a_s)), len(rows)
+
+
+def part2(X, S, sector):
+    from part2 import (DELTAS, SYN_P, cache_file, clusters, load_index, loadings,
+                       metrics, ols_betas, real_inputs, rmt_group, sin2theta,
+                       synthetic_betas, synthetic_configs, synthetic_returns)
+    from part2_runs import LEARNERS, SEEDS
+    from part2_threshold import FINE_DELTAS, FINE_SEEDS, tpath
+    from part2_bound import (DELTAS as B_DELTAS, SEEDS as B_SEEDS, bound_row,
+                             population_loadings)
+    p, T = S.shape[0], X.shape[0]
+    f = load_index().values
+    l = loadings(X.values, f)
+    b_ols = ols_betas(X.values, f)
+
+    # ------------------------------------------------------------------ H
+    rule("H. Part II data: market loadings of the 97 stocks on the S&P 500 (^GSPC)")
+    print(f"  loadings corr(x_i, SPX): range [{l.min():.3f}, {l.max():.3f}], mean {l.mean():.3f}")
+    print(f"  sin^2 theta(loadings, 1) = {sin2theta(l):.4f}   (0 = all equal; J removes "
+          f"exactly the part along 1)")
+    print(f"  OLS betas on SPX: range [{b_ols.min():.3f}, {b_ols.max():.3f}]")
+    print("  mean by sector:  " + ",  ".join(
+        f"{s}: loading {l[sector == s].mean():.3f}, OLS beta {b_ols[sector == s].mean():.3f}"
+        for s in pd.unique(sector)))
+    within = sum(((l[sector == s] - l[sector == s].mean()) ** 2).sum() for s in pd.unique(sector))
+    print(f"  share of the loadings' variance between sectors: "
+          f"{1 - within / ((l - l.mean()) ** 2).sum():.3f}")
+    _, nkeep, edge = rmt_group(S, T)
+    print(f"  RMT null: Marchenko-Pastur edge (1 + sqrt(p/T))^2 = {edge:.4f}; "
+          f"group modes kept (above the edge, market mode excluded): {nkeep}")
+
+    # ------------------------------------------------------------------ I
+    rule("I. Part II real data: six inputs x two learners (Algorithm 1 k = 3; Problem 1 sparsity 10)")
+    inputs = real_inputs(X.values, f)
+    for lr in LEARNERS:
+        diff = np.abs(np.load(cache_file(f"real/S/{lr}"))
+                      - np.load(cache_file(f"real/JSJ/{lr}"))).max()
+        print(f"  {lr}: max |L(S) - L(JSJ)| = {diff:.1e}")
+    print(f"  {'input':>10} {'learner':>7} {'comp':>5} {'sizes':>13} {'ARI sec':>8} "
+          f"{'ARI beta':>8} {'beta ratio':>10} {'deg range':>17} {'mkt share':>9}")
+    for name in inputs:
+        for lr in LEARNERS:
+            L = np.load(cache_file(f"real/{name}/{lr}"))
+            m = metrics(L, lr, sector, l)
+            share = (l @ L @ l) / np.trace(L @ S)
+            print(f"  {name:>10} {lr:>7} {m['components']:5d} {str(m['sizes']):>13} "
+                  f"{m['ari_sector']:8.3f} {m['ari_beta']:8.3f} {m['beta_ratio']:10.3f} "
+                  f"[{m['dmin']:6.3f},{m['dmax']:6.3f}] {share:9.4f}")
+    print("  alg1 clusters = connected components when there are 3, else k-means on the bottom-3 "
+          "eigenvectors (spectral fallback). beta ratio = edge-weighted mean |l_i - l_j| over "
+          "within-sector pairs / plain mean (below 1: similar-beta stocks preferred). "
+          "ARI beta: against loading terciles. mkt share = l'Ll / tr(LS), the market term's share "
+          "of the data fit on the learned graph.")
+
+    # ------------------------------------------------------------------ J
+    rule(f"J. Part II synthetic: one-factor model, p = {SYN_P}, T = {T}, seeds {list(SEEDS)}")
+    print("  x_t = beta f_t + s_sector(t) + e_t;  aligned: one beta per sector; cross: half of "
+          "each sector at 1 + delta, half at 1 - delta")
+    print(f"  {'pattern':>8} {'delta':>5} {'sin2':>6} {'input':>7} {'learner':>7} "
+          f"{'ARI sec':>8} {'ARI beta':>8} {'by beta':>7} {'comp != 3':>9}")
+    for pattern, delta in synthetic_configs():
+        beta, sec = synthetic_betas(pattern, delta)
+        s2 = sin2theta(population_loadings(beta))
+        for name in ("S", "S-mode", "oracle"):
+            for lr in LEARNERS:
+                rows = [metrics(np.load(cache_file(
+                    f"syn/{pattern}/{delta:g}/seed{s}/{name}/{lr}")), lr, sec, beta)
+                    for s in SEEDS]
+                a_s, a_b, n_b, n = flip_summary(rows)
+                odd = sum(r["components"] != 3 for r in rows) if lr == "alg1" else 0
+                print(f"  {pattern:>8} {delta:5.2f} {s2:6.3f} {name:>7} {lr:>7} "
+                      f"{a_s:8.3f} {a_b:8.3f} {n_b:>4d}/{n} {odd:>9d}")
+
+    # ------------------------------------------------------------------ K
+    rule(f"K. Part II threshold: cross pattern, fine delta grid, seeds {list(FINE_SEEDS)}")
+    print(f"  {'delta':>6} {'sin2':>6} " + " ".join(
+        f"{name + '/' + lr:>21}" for name in ("S", "S-mode", "oracle") for lr in LEARNERS))
+    print(f"  {'':>6} {'':>6} " + " ".join(f"{'ARI sec  beta  #beta':>21}" for _ in range(6)))
+    for delta in FINE_DELTAS:
+        beta, sec = synthetic_betas("cross", delta)
+        cells = []
+        for name in ("S", "S-mode", "oracle"):
+            for lr in LEARNERS:
+                rows = [metrics(np.load(tpath(delta, s, name, lr)), lr, sec, beta)
+                        for s in FINE_SEEDS]
+                a_s, a_b, n_b, n = flip_summary(rows)
+                cells.append(f"{a_s:8.3f} {a_b:5.2f} {n_b:2d}/{n}")
+        print(f"  {delta:6.3f} {sin2theta(population_loadings(beta)):6.4f} " + " ".join(
+            f"{c:>21}" for c in cells))
+    print("  sin2 from population loadings beta / sqrt(beta^2 + s^2 + e^2); #beta = seeds whose "
+          "clusters match the beta groups better than the sectors")
+
+    # ------------------------------------------------------------------ L
+    rule(f"L. Part II perturbation bound (Problem 1), cross pattern, mean over seeds {list(B_SEEDS)}")
+    print("  clean = learned from S - l l' (l = population loadings); observed = learned from S")
+    print(f"  {'delta':>5} {'sin2':>6} {'||dz||':>7} {'M':>6} {'|dw|':>7} {'bound':>7} "
+          f"{'ratio':>5} {'|dL|2':>7} {'|dL|F':>7} {'bound F':>8} {'gap':>7} {'|dL|2/gap':>9} "
+          f"{'sinTh':>6} {'DK(dL)':>7} {'DK full':>8} {'ARI obs':>7} {'ARI cln':>7}")
+
+    def show(tag, s2, r):
+        print(f"  {tag:>5} {s2:6.3f} {r['dz']:7.3f} {r['M']:6.3f} {r['dw']:7.4f} "
+              f"{r['dw_bound']:7.4f} {r['dw_bound'] / max(r['dw'], 1e-300):5.2f} {r['dL']:7.4f} "
+              f"{r['dLF']:7.4f} {r['dL_bound']:8.3f} {r['gap']:7.4f} {r['dL'] / r['gap']:9.3f} "
+              f"{r['sin']:6.3f} {r['sin_dk']:7.2f} {r['sin_full']:8.1f} "
+              f"{r['ari_obs']:7.2f} {r['ari_cln']:7.2f}")
+
+    for delta in B_DELTAS:
+        beta, sec = synthetic_betas("cross", delta)
+        lp = population_loadings(beta)
+        rows = [bound_row(np.corrcoef(synthetic_returns("cross", delta, s)[0].T), lp, sec)
+                for s in B_SEEDS]
+        r = {k: np.mean([row[k] for row in rows]) for k in rows[0]}
+        show(f"{delta:.2f}", sin2theta(lp), r)
+    show("real", sin2theta(l), bound_row(S, l, sector))
+    print("  ratio = |dw| bound / actual (step 1). bound F = sqrt(2p) |dw| bound >= ||dL||_F. "
+          "DK(dL) = 2 sqrt(k) ||dL||_2 / gap with the ACTUAL dL; DK full uses the step-1 bound. "
+          f"sin Theta is at most sqrt(k) = {np.sqrt(K):.3f}, so any DK value above that is vacuous.")
+
+
 def main():
     X, S, sector = load_sp()
     p = S.shape[0]
@@ -222,6 +347,10 @@ def main():
 
     if "--part1" in sys.argv:
         part1(S, sector, list(X.columns))
+        print("\nDone.")
+        return
+    if "--part2" in sys.argv:
+        part2(X, S, sector)
         print("\nDone.")
         return
 
@@ -337,6 +466,7 @@ def main():
           f"ARI vs sectors {ari(sector, km):.3f}")
 
     part1(S, sector, list(X.columns))
+    part2(X, S, sector)
     print("\nDone.")
 
 

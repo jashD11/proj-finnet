@@ -56,7 +56,7 @@ def bound_row(S, l, sector):
     sin_dk_actual_dL = 2 * np.sqrt(K) * np.linalg.norm(dL, 2) / gap
     sin_dk_full = 2 * np.sqrt(K) * dL_bound / gap
     return dict(dz=np.linalg.norm(d), M=M, dw=dw, dw_bound=dw_bound,
-                dL=np.linalg.norm(dL, 2), dL_bound=dL_bound, gap=gap,
+                dL=np.linalg.norm(dL, 2), dLF=np.linalg.norm(dL), dL_bound=dL_bound, gap=gap,
                 sin=sin_actual, sin_dk=sin_dk_actual_dL, sin_full=sin_dk_full,
                 ari_obs=ari(sector, clusters(L_obs, "prob1")),
                 ari_cln=ari(sector, clusters(L_cln, "prob1")))

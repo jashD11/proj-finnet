@@ -1,0 +1,116 @@
+worker 1: queue of 120 jobs
+START [3/120] real/JSJ/alg1
+DONE [3/120] real/JSJ/alg1 85s
+START [5/120] real/S-mode/alg1
+DONE [5/120] real/S-mode/alg1 103s
+START [9/120] real/resid-EW/alg1
+DONE [9/120] real/resid-EW/alg1 211s
+START [13/120] syn/equal/0/seed0/S/alg1
+DONE [13/120] syn/equal/0/seed0/S/alg1 0s
+START [15/120] syn/equal/0/seed0/S-mode/alg1
+DONE [15/120] syn/equal/0/seed0/S-mode/alg1 1s
+START [17/120] syn/equal/0/seed0/oracle/alg1
+DONE [17/120] syn/equal/0/seed0/oracle/alg1 2s
+START [19/120] syn/equal/0/seed1/S/alg1
+DONE [19/120] syn/equal/0/seed1/S/alg1 0s
+START [21/120] syn/equal/0/seed1/S-mode/alg1
+DONE [21/120] syn/equal/0/seed1/S-mode/alg1 1s
+START [23/120] syn/equal/0/seed1/oracle/alg1
+DONE [23/120] syn/equal/0/seed1/oracle/alg1 0s
+START [25/120] syn/aligned/0.2/seed0/S/alg1
+DONE [25/120] syn/aligned/0.2/seed0/S/alg1 1s
+START [27/120] syn/aligned/0.2/seed0/S-mode/alg1
+DONE [27/120] syn/aligned/0.2/seed0/S-mode/alg1 1s
+START [29/120] syn/aligned/0.2/seed0/oracle/alg1
+DONE [29/120] syn/aligned/0.2/seed0/oracle/alg1 1s
+START [31/120] syn/aligned/0.2/seed1/S/alg1
+DONE [31/120] syn/aligned/0.2/seed1/S/alg1 39s
+START [33/120] syn/aligned/0.2/seed1/S-mode/alg1
+DONE [33/120] syn/aligned/0.2/seed1/S-mode/alg1 2s
+START [35/120] syn/aligned/0.2/seed1/oracle/alg1
+DONE [35/120] syn/aligned/0.2/seed1/oracle/alg1 1s
+START [37/120] syn/aligned/0.4/seed0/S/alg1
+DONE [37/120] syn/aligned/0.4/seed0/S/alg1 0s
+START [39/120] syn/aligned/0.4/seed0/S-mode/alg1
+DONE [39/120] syn/aligned/0.4/seed0/S-mode/alg1 1s
+START [41/120] syn/aligned/0.4/seed0/oracle/alg1
+DONE [41/120] syn/aligned/0.4/seed0/oracle/alg1 1s
+START [43/120] syn/aligned/0.4/seed1/S/alg1
+DONE [43/120] syn/aligned/0.4/seed1/S/alg1 1s
+START [45/120] syn/aligned/0.4/seed1/S-mode/alg1
+DONE [45/120] syn/aligned/0.4/seed1/S-mode/alg1 0s
+START [47/120] syn/aligned/0.4/seed1/oracle/alg1
+DONE [47/120] syn/aligned/0.4/seed1/oracle/alg1 1s
+START [49/120] syn/aligned/0.6/seed0/S/alg1
+DONE [49/120] syn/aligned/0.6/seed0/S/alg1 1s
+START [51/120] syn/aligned/0.6/seed0/S-mode/alg1
+DONE [51/120] syn/aligned/0.6/seed0/S-mode/alg1 0s
+START [53/120] syn/aligned/0.6/seed0/oracle/alg1
+DONE [53/120] syn/aligned/0.6/seed0/oracle/alg1 1s
+START [55/120] syn/aligned/0.6/seed1/S/alg1
+DONE [55/120] syn/aligned/0.6/seed1/S/alg1 1s
+START [57/120] syn/aligned/0.6/seed1/S-mode/alg1
+DONE [57/120] syn/aligned/0.6/seed1/S-mode/alg1 0s
+START [59/120] syn/aligned/0.6/seed1/oracle/alg1
+DONE [59/120] syn/aligned/0.6/seed1/oracle/alg1 1s
+START [61/120] syn/aligned/0.8/seed0/S/alg1
+DONE [61/120] syn/aligned/0.8/seed0/S/alg1 1s
+START [63/120] syn/aligned/0.8/seed0/S-mode/alg1
+DONE [63/120] syn/aligned/0.8/seed0/S-mode/alg1 1s
+START [65/120] syn/aligned/0.8/seed0/oracle/alg1
+DONE [65/120] syn/aligned/0.8/seed0/oracle/alg1 1s
+START [67/120] syn/aligned/0.8/seed1/S/alg1
+DONE [67/120] syn/aligned/0.8/seed1/S/alg1 1s
+START [69/120] syn/aligned/0.8/seed1/S-mode/alg1
+DONE [69/120] syn/aligned/0.8/seed1/S-mode/alg1 1s
+START [71/120] syn/aligned/0.8/seed1/oracle/alg1
+DONE [71/120] syn/aligned/0.8/seed1/oracle/alg1 1s
+START [73/120] syn/cross/0.2/seed0/S/alg1
+DONE [73/120] syn/cross/0.2/seed0/S/alg1 1s
+START [75/120] syn/cross/0.2/seed0/S-mode/alg1
+DONE [75/120] syn/cross/0.2/seed0/S-mode/alg1 1s
+START [77/120] syn/cross/0.2/seed0/oracle/alg1
+DONE [77/120] syn/cross/0.2/seed0/oracle/alg1 1s
+START [79/120] syn/cross/0.2/seed1/S/alg1
+DONE [79/120] syn/cross/0.2/seed1/S/alg1 1s
+START [81/120] syn/cross/0.2/seed1/S-mode/alg1
+DONE [81/120] syn/cross/0.2/seed1/S-mode/alg1 1s
+START [83/120] syn/cross/0.2/seed1/oracle/alg1
+DONE [83/120] syn/cross/0.2/seed1/oracle/alg1 1s
+START [85/120] syn/cross/0.4/seed0/S/alg1
+DONE [85/120] syn/cross/0.4/seed0/S/alg1 1s
+START [87/120] syn/cross/0.4/seed0/S-mode/alg1
+DONE [87/120] syn/cross/0.4/seed0/S-mode/alg1 1s
+START [89/120] syn/cross/0.4/seed0/oracle/alg1
+DONE [89/120] syn/cross/0.4/seed0/oracle/alg1 1s
+START [91/120] syn/cross/0.4/seed1/S/alg1
+DONE [91/120] syn/cross/0.4/seed1/S/alg1 1s
+START [93/120] syn/cross/0.4/seed1/S-mode/alg1
+DONE [93/120] syn/cross/0.4/seed1/S-mode/alg1 1s
+START [95/120] syn/cross/0.4/seed1/oracle/alg1
+DONE [95/120] syn/cross/0.4/seed1/oracle/alg1 1s
+START [97/120] syn/cross/0.6/seed0/S/alg1
+DONE [97/120] syn/cross/0.6/seed0/S/alg1 3s
+START [99/120] syn/cross/0.6/seed0/S-mode/alg1
+DONE [99/120] syn/cross/0.6/seed0/S-mode/alg1 1s
+START [101/120] syn/cross/0.6/seed0/oracle/alg1
+DONE [101/120] syn/cross/0.6/seed0/oracle/alg1 2s
+START [103/120] syn/cross/0.6/seed1/S/alg1
+DONE [103/120] syn/cross/0.6/seed1/S/alg1 2s
+START [105/120] syn/cross/0.6/seed1/S-mode/alg1
+DONE [105/120] syn/cross/0.6/seed1/S-mode/alg1 1s
+START [107/120] syn/cross/0.6/seed1/oracle/alg1
+DONE [107/120] syn/cross/0.6/seed1/oracle/alg1 1s
+START [109/120] syn/cross/0.8/seed0/S/alg1
+DONE [109/120] syn/cross/0.8/seed0/S/alg1 2s
+START [111/120] syn/cross/0.8/seed0/S-mode/alg1
+DONE [111/120] syn/cross/0.8/seed0/S-mode/alg1 2s
+START [113/120] syn/cross/0.8/seed0/oracle/alg1
+DONE [113/120] syn/cross/0.8/seed0/oracle/alg1 1s
+START [115/120] syn/cross/0.8/seed1/S/alg1
+DONE [115/120] syn/cross/0.8/seed1/S/alg1 2s
+START [117/120] syn/cross/0.8/seed1/S-mode/alg1
+DONE [117/120] syn/cross/0.8/seed1/S-mode/alg1 1s
+START [119/120] syn/cross/0.8/seed1/oracle/alg1
+DONE [119/120] syn/cross/0.8/seed1/oracle/alg1 1s
+worker 1 FINISHED
