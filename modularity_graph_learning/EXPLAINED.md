@@ -245,9 +245,60 @@ Write-up: `reports/2026-10-27_part1_lemma.tex` (6 pages). Numbers: `report_numbe
 **Bottom line:** under the paper's degree rule, modularity adds nothing new. Anything new has to
 come from the null model (Part II) or from dropping the degree rule (Part III).
 
-## 5. What comes next
+## 5. What has been carried out for Part II (27 October)
 
-Part I is done; its framing of (c) may need a touch-up once the professor replies to the 18
-October note. Part II (the market factor as a hidden null model) does not depend on that reply
-and is the natural next step. Part III waits on the professor's choice of repair for the
-unbounded objective, and needs a Python port of SGL.
+Write-up: appended to the same note, `reports/2026-10-27_part1_lemma.tex` (now 12 pages,
+Part II from page 7). Numbers: `report_numbers.py --part2`.
+
+**The question.** On most days the whole market moves together, and that shared move
+says nothing about which stocks belong together. Modularity methods subtract a model of it
+first (a "null model"). The paper's Laplacian methods never do, yet they still find the
+sectors. Why, and is it always safe?
+
+1. **Why it works: the learner is blind to the shared move.** A Laplacian treats "every
+   stock moving the same amount" as invisible (`L1 = 0`). So the learner only ever sees
+   the returns after each day's average is taken out (`tr(LS) = tr(L·JSJ)`). Checked:
+   learning from the raw and from the de-averaged data gives the same graph (to 2.7e-10
+   for Problem 1, and to the solver's tolerance for Algorithm 1).
+2. **When it is not enough: different betas.** Taking out the daily average only removes
+   the market completely if every stock reacts to it equally (all betas equal). If betas
+   differ, what is left over acts like a penalty on links between a high-beta and a
+   low-beta stock (`σ²·Σ W_ij (b_i − b_j)²`). Its total size is measured by one number,
+   `sin²θ`, which is 0 when all betas are equal and grows as they spread.
+3. **Real data: the built-in removal is enough, and explicit removal hurts.** On the 97
+   S&P stocks, `sin²θ = 0.064`. Algorithm 1 finds the three sectors exactly. Removing the
+   market explicitly first (four different ways: top eigenvector, regression on the S&P
+   500 index, regression on the equal-weight average, and the random-matrix "group"
+   part) makes it *worse*: ARI 0.830 to 0.896 instead of 1.000. The reason: here betas
+   mostly follow sectors (Consumer Staples low, Energy high; 58% of beta variation is
+   between sectors), so the leftover penalty actually helps separate sectors, and
+   removing the market removes that help.
+4. **Made-up data: when betas cut across sectors, it breaks, suddenly.** In a simulated
+   market with three sectors where half of each sector is high-beta and half low-beta,
+   the learned groups flip from "sectors" to "high vs low beta" once `sin²θ` passes
+   about 0.12 to 0.14 (Problem 1) or 0.14 to 0.17 (Algorithm 1). Removing the market
+   explicitly fixes it in every run. When betas instead follow sectors, nothing ever
+   breaks, even with large beta differences.
+5. **The bound: half works.** The proposal asked for a formula linking beta spread to how
+   far the cluster directions can move. Step 1 (how far the edge weights move) is proved
+   and is within 1.65 to 4.84 times the real movement. Step 2 (the Davis-Kahan theorem)
+   is proved but useless here: it allows a movement far above the maximum possible,
+   because the gap between the cluster and non-cluster eigenvalues is tiny (about 0.04).
+   What the numbers do show is a simple rule: the flip happens when the size of the
+   change to the graph reaches about that gap (ratio about 1.1 to 1.3). On the real data
+   the ratio is 0.67, safely below.
+6. **Runs.** 120 main runs plus 270 threshold runs, about 45 minutes on two background
+   workers. Four Algorithm 1 runs (three on real explicitly-cleaned data, one synthetic)
+   did not split into exactly three pieces; their groups were read from the eigenvectors
+   instead, and the note lists this.
+
+**Bottom line:** for this data, the paper's built-in handling of the market is enough and
+an explicit null model does not help. It would matter for stocks whose betas vary within
+sectors, and the simulation shows where that starts.
+
+## 6. What comes next
+
+Parts I and II are done. Part III waits on the professor's choice of repair for the
+unbounded objective (18 October note), and needs a Python port of SGL. A possible Part II
+follow-up is a stock universe where betas vary within sectors, to see if the simulated
+flip happens on real data. Which to do is the professor's call.

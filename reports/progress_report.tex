@@ -442,6 +442,28 @@ and the normalised $\mathbf{B}_n$ keeps eigenvalue 1 twice at every $\rho$, as t
 Written up in \texttt{reports/2026-10-27\_part1\_lemma.tex}; (c) stated for unit
 degree only, pending the professor's reply.
 
+\logday{27 October: Part II finished}
+
+\textbf{The implicit null.} Since $\mathbf{L}\mathbf{1}=\mathbf{0}$,
+$\operatorname{tr}(\mathbf{L}\mathbf{S})=\operatorname{tr}(\mathbf{L}\mathbf{J}\mathbf{S}\mathbf{J})$:
+the learner never sees the market's common move. Equal betas are removed exactly;
+unequal betas leave $\sigma^2\sum_{i<j}W_{ij}(b_i-b_j)^2$, of total size
+$p\lVert\mathbf b\rVert^2\sin^2\theta$. Graphs from $\mathbf S$ and
+$\mathbf{J}\mathbf{S}\mathbf{J}$ agree to $2.7\times10^{-10}$ (Problem 1).
+
+\textbf{Real data} ($\sin^2\theta=0.064$; betas follow sectors, $57.7\%$ of the
+loading variance between them): Algorithm 1 on $\mathbf S$ recovers the sectors exactly,
+and every explicit null (top eigenmode, regression on \texttt{\^{}GSPC} or the
+equal-weight average, RMT group part) does worse, ARI $0.830$ to $0.896$.
+\textbf{Synthetic}, betas cutting across sectors: the clusters switch to beta groups at
+$\sin^2\theta$ $0.116$ to $0.143$ (Problem 1) and $0.143$ to $0.173$ (Algorithm 1);
+explicit nulls recover the sectors in every run. \textbf{Bound}: strong convexity step
+within $1.65$ to $4.84$, Davis-Kahan step vacuous (eigengap about $0.04$); the switch sits
+where $\lVert\Delta\mathbf L\rVert_2/\mathrm{gap}$ passes about 1 (real data $0.669$).
+
+Appended to \texttt{reports/2026-10-27\_part1\_lemma.tex} (now Parts I and II, 12
+pages); numbers from \texttt{report\_numbers.py -{}-part2}.
+
 \logday{\textcolor{gray}{dd Month: next entry here}}
 
 \vspace{4mm}

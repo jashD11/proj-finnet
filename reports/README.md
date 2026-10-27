@@ -33,7 +33,20 @@ Entries are a historical record and are not rewritten when later work supersedes
 them. Where a conclusion is retracted, the newer entry says so explicitly; the
 12 August D1/D2 framing is retracted in the 31 August entry.
 
-## `2026-10-27_part1_lemma.tex`: Part I of the proposal (27 Oct 2026)
+## `2026-10-27_part1_lemma.tex`: Parts I and II of the proposal (27 Oct 2026)
+
+**Part II** was appended on 27 October (pages 7 to 12; the file name is kept so links
+still work). The learner only sees `JSJ` (`tr(LS) = tr(L·JSJ)`), so equal betas are
+removed for free and unequal ones leave a penalty `σ²·Σ W_ij (b_i − b_j)²` of total
+size `∝ sin²θ`. On the S&P panel the implicit null is enough (Algorithm 1 ARI 1.000) and
+every explicit null does worse (0.830 to 0.896), because betas follow sectors. In a
+synthetic one-factor model with betas cutting across sectors the clusters switch to beta
+groups at `sin²θ` 0.116 to 0.143 (Problem 1) and 0.143 to 0.173 (Algorithm 1); explicit
+nulls always recover the sectors. The two-step bound: Step 1 holds within 1.65 to 4.84,
+the Davis-Kahan step is vacuous, and the switch sits where `‖ΔL‖₂ / gap` passes about 1
+(real data 0.669). Numbers: `report_numbers.py --part2`.
+
+**Part I:**
 
 The proposal's Part I, finished. Under `diag(L) = 1`, `B = I − L − 11ᵀ/p`; the note
 proves (a) to (c) from one reflection lemma, gives (b) in exact form (the two sides
