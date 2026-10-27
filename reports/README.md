@@ -33,6 +33,16 @@ Entries are a historical record and are not rewritten when later work supersedes
 them. Where a conclusion is retracted, the newer entry says so explicitly; the
 12 August D1/D2 framing is retracted in the 31 August entry.
 
+## `2026-10-27_parts1_2_report.tex`: Parts I and II as a full report (27 Oct 2026)
+
+The same results as the working note below, rewritten as a self-explanatory report for
+the professor: title page, contents, a background section that defines every term
+(Laplacian, eigengap, modularity and null models, Ky Fan, ARI, betas, Davis-Kahan) with
+small worked pictures, the proposal's claims restated in words before each proof, and
+16 figures, most drawn from the actual learned graphs (`figures/parts1_2/`, made by
+`modularity_graph_learning/report_figures.py`). Ends with a status table, deviations,
+suggested next steps and a glossary. 28 pages. Numbers from `report_numbers.py`.
+
 ## `2026-10-27_part1_lemma.tex`: Parts I and II of the proposal (27 Oct 2026)
 
 **Part II** was appended on 27 October (pages 7 to 12; the file name is kept so links

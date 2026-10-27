@@ -24,6 +24,7 @@ Paper 1's solver is reused, not copied: `common.py` puts `paper1_gmrf_laplacian/
 | `part2_bound.py` | The two-step perturbation bound for Problem 1, each step against the learned graphs (seconds) |
 | `sp500_index.csv` | ^GSPC daily log returns on the 753 panel days (Yahoo Finance via yfinance) |
 | `part2_cache/` | Every learned Part II graph (about 13 MB), committed so `report_numbers.py --part2` runs in seconds |
+| `report_figures.py` | Every figure of `reports/2026-10-27_parts1_2_report.tex`, drawn from the cached learned graphs into `reports/figures/parts1_2/` |
 | `tests/test_part2.py` | Part II: the `JSJ` invariance, the market-term identity, equal betas giving zero, the generator, the explicit nulls (9 tests) |
 | `tests/test_lemma.py` | Part I (a), (b), (c), the `K₄` and 6-cycle counterexamples, the c-regular and unequal-degree cases, the Part III identity and the normalised case, on random graphs (25 tests) |
 | `cache_*.npy` | Committed so `report_numbers.py` runs in seconds; delete to rebuild |
